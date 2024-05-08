@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.ragl.divide.ui.DivideApp
 import com.ragl.divide.ui.theme.DivideTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,29 +20,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DivideTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                DivideApp()
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun DivideAppPreview() {
     DivideTheme {
-        Greeting("Android")
+        DivideApp()
     }
 }
