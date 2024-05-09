@@ -5,8 +5,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -45,63 +47,87 @@ class SignupViewModel @Inject constructor(
     fun updatePasswordConfirm(passwordConfirm: String) {
         this.passwordConfirm = passwordConfirm.trim()
     }
-
-    fun tryLogin(onSuccessfulLogin: () -> Unit, onFailedLogin: () -> Unit) {
+    fun trySignup(onSuccessfulLogin: () -> Unit, onFailedLogin: (String) -> Unit) {
         validateEmail()
         validateUsername()
         validatePassword()
         validatePasswordConfirm()
 
-        if (emailError.isBlank() && passwordError.isBlank() && passwordConfirmError.isBlank() && usernameError.isBlank()) {
-            auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
-                if (task.isSuccessful) onSuccessfulLogin()
-                else onFailedLogin()
+        if (validateEmail() && validateUsername() && validatePassword() && validatePasswordConfirm()) {
+            viewModelScope.launch {
+                try {
+                    auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
+                        if (task.isSuccessful) onSuccessfulLogin()
+                    }.addOnFailureListener {
+                        onFailedLogin(it.message.orEmpty())
+                    }
+                } catch (e: Exception) {
+                    onFailedLogin(e.message.orEmpty())
+                }
             }
         }
     }
 
     private fun validateEmail(): Boolean {
-        if (email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailError = ""
-            return true
-        } else {
-            emailError = "Email is not valid"
+        if (email.isEmpty()){
+            emailError = "Email Address is required"
             return false
+        } else {
+            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                emailError = "Invalid email address"
+                return false
+            } else {
+                emailError = ""
+                return true
+            }
         }
     }
 
     private fun validateUsername(): Boolean {
-        if (username.isNotBlank() && username.length >= 3) {
+        val usernamePattern = "(?!.*[.]{2,})^[a-zA-Z0-9.\\-_]{3,20}\$"
+
+        return if (username.isEmpty()) {
+            usernameError = "Username cannot be empty"
+            false
+        } else if (username.matches(usernamePattern.toRegex())) {
             usernameError = ""
-            return true
+            true
         } else {
-            usernameError = "Username must be at least 3 characters"
-            return false
+            usernameError =
+                "Username must be between 3 and 20 characters and can only contain letters, numbers, underscores, and hyphens"
+            false
         }
     }
 
+
     private fun validatePassword(): Boolean {
-        if (password.isNotBlank()) {
-            if (password.length >= 8) {
-                passwordError = ""
-                return true
-            } else {
-                passwordError = "Password must be at least 8 characters"
-                return false
-            }
-        } else {
+        val passwordPattern = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}\$"
+        if (password.isBlank()) {
             passwordError = "Password is required"
             return false
         }
+
+        if (password.length < 8) {
+            passwordError = "Password must be at least 8 characters"
+            return false
+        }
+
+        if (!password.matches(passwordPattern.toRegex())) {
+            passwordError =
+                "Password must contain at least one number, one uppercase letter, one lowercase letter and one special character"
+            return false
+        }
+
+        passwordError = ""
+        return true
     }
 
     private fun validatePasswordConfirm(): Boolean {
-        if (passwordConfirm.isNotBlank() && passwordConfirm == password) {
-            passwordConfirmError = ""
-            return true
+        passwordConfirmError = if (passwordConfirm.isNotBlank() && passwordConfirm == password) {
+            ""
         } else {
-            passwordConfirmError = "Passwords do not match"
-            return false
+            "Passwords do not match"
         }
+        return passwordConfirmError.isEmpty()
     }
 }
