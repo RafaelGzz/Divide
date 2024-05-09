@@ -7,19 +7,23 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 import com.ragl.divide.ui.screens.HomeScreen
 import com.ragl.divide.ui.screens.LoginScreen
 
 @Composable
-fun DivideApp(){
-    Scaffold {padding ->
+fun DivideApp(auth: FirebaseAuth = Firebase.auth) {
+    Scaffold { padding ->
         val navController = rememberNavController()
-        NavHost(navController = navController, startDestination = "Login" ) {
-            composable("Login" ){
+        val startDestination = if (auth.currentUser != null) "Home" else "Login"
+        NavHost(navController = navController, startDestination = startDestination) {
+            composable("Login") {
                 LoginScreen(
                     onSuccess = {
-                        navController.navigate("Home"){
-                            popUpTo("Login"){
+                        navController.navigate("Home") {
+                            popUpTo("Login") {
                                 inclusive = true
                             }
                         }
@@ -28,8 +32,14 @@ fun DivideApp(){
                 )
             }
 
-            composable("Home" ){
-                HomeScreen()
+            composable("Home") {
+                HomeScreen(onLogOut = {
+                    navController.navigate("Login") {
+                        popUpTo("Home") {
+                            inclusive = true
+                        }
+                    }
+                })
             }
         }
     }

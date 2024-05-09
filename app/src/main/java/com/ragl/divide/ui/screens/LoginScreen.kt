@@ -1,10 +1,10 @@
 package com.ragl.divide.ui.screens
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -116,19 +116,19 @@ fun LoginScreen(
                     )
                 }
             }
-//            Box(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(16.dp)
-//                    .background(
-//                        brush = Brush.verticalGradient(
-//                            colors = listOf(
-//                                Color.Black.copy(alpha = .08f),
-//                                Color.Transparent
-//                            )
-//                        )
-//                    )
-//            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(16.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = .08f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
         }
         HorizontalPager(
             state = pagerState
@@ -143,6 +143,44 @@ fun LoginScreen(
 }
 
 @Composable
+private fun SocialMediaRow(
+    context: Context,
+    onSuccess: () -> Unit,
+    onFail: (String) -> Unit,
+    gvm: GoogleViewModel = hiltViewModel()
+) {
+    val coroutineScope = rememberCoroutineScope()
+    Row {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_google),
+            contentDescription = stringResource(R.string.connect_with_google),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(ShapeDefaults.ExtraLarge)
+                .clickable {
+                    gvm.signInWithGoogle(
+                        context = context,
+                        coroutineScope = coroutineScope,
+                        onSuccessfulLogin = onSuccess,
+                        onFailedLogin = { onFail(it) }
+                    )
+                }
+        )
+        Spacer(modifier = Modifier.width(32.dp))
+        Icon(
+            painter = painterResource(id = R.drawable.ic_facebook),
+            contentDescription = stringResource(R.string.connect_with_facebook),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(ShapeDefaults.ExtraLarge)
+                .clickable { }
+        )
+    }
+}
+
+@Composable
 private fun Login(
     onSuccess: () -> Unit,
     vm: LoginViewModel = hiltViewModel()
@@ -150,7 +188,7 @@ private fun Login(
     val context = LocalContext.current
     Column(
         modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 32.dp)
+            .padding(horizontal = 16.dp, vertical = 20.dp)
             .fillMaxHeight()
     ) {
         LoginTextField(
@@ -183,27 +221,11 @@ private fun Login(
             style = AppTypography.titleMedium
         )
         Spacer(modifier = Modifier.height(20.dp))
-        Row {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_google),
-                contentDescription = stringResource(R.string.connect_with_google),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(ShapeDefaults.ExtraLarge)
-                    .clickable { }
-            )
-            Spacer(modifier = Modifier.width(32.dp))
-            Icon(
-                painter = painterResource(id = R.drawable.ic_facebook),
-                contentDescription = stringResource(R.string.connect_with_facebook),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(ShapeDefaults.ExtraLarge)
-                    .clickable { }
-            )
-        }
+        SocialMediaRow(
+            context = context,
+            onSuccess = onSuccess,
+            onFail = {Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+        )
     }
 }
 
@@ -224,7 +246,7 @@ fun SignUp(
             input = vm.email,
             error = vm.emailError,
             onValueChange = { vm.updateEmail(it) },
-            modifier = Modifier.padding(top = 32.dp)
+            modifier = Modifier.padding(top = 20.dp)
         )
         LoginTextField(
             label = stringResource(R.string.username),
@@ -249,8 +271,8 @@ fun SignUp(
         LoginButton(
             label = stringResource(R.string.sign_up),
             onClick = {
-                vm.tryLogin(onSuccessfulLogin = onSuccess, onFailedLogin = {
-                    Toast.makeText(context, "Login Failed", Toast.LENGTH_SHORT).show()
+                vm.trySignup(onSuccessfulLogin = onSuccess, onFailedLogin = {
+                    Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
                 })
             },
             modifier = Modifier.padding(vertical = 8.dp)
@@ -263,27 +285,11 @@ fun SignUp(
             style = AppTypography.titleMedium
         )
         Spacer(modifier = Modifier.height(20.dp))
-        Row {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_google),
-                contentDescription = stringResource(R.string.connect_with_google),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(ShapeDefaults.ExtraLarge)
-                    .clickable { }
-            )
-            Spacer(modifier = Modifier.width(32.dp))
-            Icon(
-                painter = painterResource(id = R.drawable.ic_facebook),
-                contentDescription = stringResource(R.string.connect_with_facebook),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(ShapeDefaults.ExtraLarge)
-                    .clickable { }
-            )
-        }
+        SocialMediaRow(
+            context = context,
+            onSuccess = onSuccess,
+            onFail = {Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
+        )
     }
 }
 
