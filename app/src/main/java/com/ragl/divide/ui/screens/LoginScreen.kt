@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +20,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Visibility
@@ -70,13 +73,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
-    vm: LoginViewModel = hiltViewModel(),
     onSuccess: () -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf(stringResource(id = R.string.log_in), stringResource(id = R.string.sign_up))
     val pagerState = rememberPagerState { tabs.size }
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     LaunchedEffect(pagerState.currentPage) {
         selectedTabIndex = pagerState.currentPage
@@ -88,7 +89,7 @@ fun LoginScreen(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            Spacer(modifier = Modifier.height(64.dp))
+            Spacer(modifier = Modifier.height(40.dp))
             Text(
                 text = stringResource(id = R.string.app_name),
                 style = AppTypography.headlineLarge.copy(
@@ -97,7 +98,7 @@ fun LoginScreen(
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             TabRow(selectedTabIndex = selectedTabIndex) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -115,133 +116,38 @@ fun LoginScreen(
                     )
                 }
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(16.dp)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = .08f),
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
+//            Box(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(16.dp)
+//                    .background(
+//                        brush = Brush.verticalGradient(
+//                            colors = listOf(
+//                                Color.Black.copy(alpha = .08f),
+//                                Color.Transparent
+//                            )
+//                        )
+//                    )
+//            )
         }
         HorizontalPager(
             state = pagerState
         ) { pagerIndex ->
             when (pagerIndex) {
-                0 -> Login(
-                    email = vm.email,
-                    emailError = vm.emailError,
-                    password = vm.password,
-                    passwordError = vm.passwordError,
-                    onEmailChange = { vm.updateEmail(it) },
-                    onPasswordChange = { vm.updatePassword(it) },
-                    onButtonClicked = {
-                        vm.tryLogin(
-                            onSuccessfulLogin = onSuccess,
-                            onFailedLogin = {
-                                Toast.makeText(context, "Login Failed", Toast.LENGTH_SHORT).show()
-                            }
-                        )
-                    }
-                )
+                0 -> Login(onSuccess = onSuccess)
 
-                1 -> SignUp(
-                    email = vm.email,
-                    emailError = vm.emailError,
-                    password = vm.password,
-                    passwordError = vm.passwordError,
-                    onEmailChange = { vm.updateEmail(it) },
-                    onPasswordChange = { vm.updatePassword(it) },
-                    onButtonClicked = {
-                        vm.tryLogin(
-                            onSuccessfulLogin = onSuccess,
-                            onFailedLogin = {
-                                Toast.makeText(context, "Login Failed", Toast.LENGTH_SHORT).show()
-                            }
-                        )
-                    })
+                1 -> SignUp(onSuccess = onSuccess)
             }
         }
     }
 }
 
 @Composable
-fun SignUp(
-    email: String,
-    emailError: String,
-    password: String,
-    passwordError: String,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onButtonClicked: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 32.dp)
-            .fillMaxHeight()
-    ) {
-        LoginTextField(
-            label = stringResource(R.string.email_address_text),
-            input = email,
-            error = emailError,
-            onValueChange = { onEmailChange(it) },
-        )
-        LoginTextField(
-            label = stringResource(R.string.password_text),
-            input = password,
-            error = passwordError,
-            isPassword = true,
-            onValueChange = { onPasswordChange(it) },
-            modifier = Modifier.padding(bottom = 8.dp, top = 4.dp)
-        )
-        LoginButton(label = stringResource(R.string.sign_up), onClick = { onButtonClicked() })
-        Spacer(modifier = Modifier.height(32.dp))
-        Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = .3f))
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = stringResource(R.string.connect_with_social_media),
-            style = AppTypography.titleMedium
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Row {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_google),
-                contentDescription = stringResource(R.string.connect_with_google),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(ShapeDefaults.ExtraLarge)
-                    .clickable { }
-            )
-            Spacer(modifier = Modifier.width(32.dp))
-            Icon(
-                painter = painterResource(id = R.drawable.ic_facebook),
-                contentDescription = stringResource(R.string.connect_with_facebook),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(ShapeDefaults.ExtraLarge)
-                    .clickable { }
-            )
-        }
-    }
-}
-
-@Composable
 private fun Login(
-    email: String,
-    emailError: String,
-    password: String,
-    passwordError: String,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onButtonClicked: () -> Unit
+    onSuccess: () -> Unit,
+    vm: LoginViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 32.dp)
@@ -249,20 +155,27 @@ private fun Login(
     ) {
         LoginTextField(
             label = stringResource(R.string.email_address_text),
-            input = email,
-            error = emailError,
-            onValueChange = { onEmailChange(it) },
+            input = vm.email,
+            error = vm.emailError,
+            onValueChange = { vm.updateEmail(it) },
         )
         LoginTextField(
             label = stringResource(R.string.password_text),
-            input = password,
-            error = passwordError,
+            input = vm.password,
+            error = vm.passwordError,
             isPassword = true,
-            onValueChange = { onPasswordChange(it) },
-            modifier = Modifier.padding(bottom = 8.dp, top = 4.dp)
+            onValueChange = { vm.updatePassword(it) },
         )
-        LoginButton(label = stringResource(R.string.log_in), onClick = { onButtonClicked() })
-        Spacer(modifier = Modifier.height(32.dp))
+        LoginButton(
+            label = stringResource(R.string.log_in),
+            onClick = {
+                vm.tryLogin(onSuccessfulLogin = onSuccess, onFailedLogin = {
+                    Toast.makeText(context, "Login Failed", Toast.LENGTH_SHORT).show()
+                })
+            },
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+        Spacer(modifier = Modifier.height(20.dp))
         Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = .3f))
         Spacer(modifier = Modifier.height(20.dp))
         Text(
@@ -295,13 +208,98 @@ private fun Login(
 }
 
 @Composable
-private fun LoginButton(onClick: () -> Unit, label: String) {
+fun SignUp(
+    onSuccess: () -> Unit,
+    vm: SignupViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .verticalScroll(state = rememberScrollState())
+            .fillMaxHeight()
+    ) {
+        LoginTextField(
+            label = stringResource(R.string.email_address_text),
+            input = vm.email,
+            error = vm.emailError,
+            onValueChange = { vm.updateEmail(it) },
+            modifier = Modifier.padding(top = 32.dp)
+        )
+        LoginTextField(
+            label = stringResource(R.string.username),
+            input = vm.username,
+            error = vm.usernameError,
+            onValueChange = { vm.updateUsername(it) },
+        )
+        LoginTextField(
+            label = stringResource(R.string.password_text),
+            input = vm.password,
+            error = vm.passwordError,
+            isPassword = true,
+            onValueChange = { vm.updatePassword(it) },
+        )
+        LoginTextField(
+            label = stringResource(R.string.confirm_password_text),
+            input = vm.passwordConfirm,
+            error = vm.passwordConfirmError,
+            isPassword = true,
+            onValueChange = { vm.updatePasswordConfirm(it) },
+        )
+        LoginButton(
+            label = stringResource(R.string.sign_up),
+            onClick = {
+                vm.tryLogin(onSuccessfulLogin = onSuccess, onFailedLogin = {
+                    Toast.makeText(context, "Login Failed", Toast.LENGTH_SHORT).show()
+                })
+            },
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = .3f))
+        Spacer(modifier = Modifier.height(20.dp))
+        Text(
+            text = stringResource(R.string.connect_with_social_media),
+            style = AppTypography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        Row {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_google),
+                contentDescription = stringResource(R.string.connect_with_google),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(ShapeDefaults.ExtraLarge)
+                    .clickable { }
+            )
+            Spacer(modifier = Modifier.width(32.dp))
+            Icon(
+                painter = painterResource(id = R.drawable.ic_facebook),
+                contentDescription = stringResource(R.string.connect_with_facebook),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(ShapeDefaults.ExtraLarge)
+                    .clickable { }
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun LoginButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    label: String
+) {
     Button(
         onClick = { onClick() },
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
         contentPadding = PaddingValues(),
         shape = ShapeDefaults.ExtraSmall,
-        modifier = Modifier.shadow(4.dp, shape = ShapeDefaults.Medium)
+        modifier = modifier.shadow(4.dp, shape = ShapeDefaults.Medium)
     ) {
         Box(
             contentAlignment = Alignment.Center,

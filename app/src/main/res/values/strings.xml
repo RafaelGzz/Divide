@@ -2,9 +2,11 @@
     <string name="app_name">Divide</string>
     <string name="connect_with_social_media">Connect with Social Media</string>
     <string name="password_text">Password</string>
+    <string name="confirm_password_text">Confirm Password</string>
     <string name="email_address_text">Email Address</string>
     <string name="connect_with_google">Connect with Google</string>
     <string name="connect_with_facebook">Connect with Facebook</string>
     <string name="log_in">Log In</string>
     <string name="sign_up">Sign Up</string>
+    <string name="username">Username</string>
 </resources>
