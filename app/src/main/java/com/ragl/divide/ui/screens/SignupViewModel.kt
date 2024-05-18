@@ -5,16 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class SignupViewModel @Inject constructor(
-    private var auth: FirebaseAuth
-) : ViewModel() {
+class SignupViewModel: ViewModel() {
     var email by mutableStateOf("")
         private set
     var emailError by mutableStateOf("")
@@ -47,25 +39,9 @@ class SignupViewModel @Inject constructor(
     fun updatePasswordConfirm(passwordConfirm: String) {
         this.passwordConfirm = passwordConfirm.trim()
     }
-    fun trySignup(onSuccessfulLogin: () -> Unit, onFailedLogin: (String) -> Unit) {
-        validateEmail()
-        validateUsername()
-        validatePassword()
-        validatePasswordConfirm()
 
-        if (validateEmail() && validateUsername() && validatePassword() && validatePasswordConfirm()) {
-            viewModelScope.launch {
-                try {
-                    auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
-                        if (task.isSuccessful) onSuccessfulLogin()
-                    }.addOnFailureListener {
-                        onFailedLogin(it.message.orEmpty())
-                    }
-                } catch (e: Exception) {
-                    onFailedLogin(e.message.orEmpty())
-                }
-            }
-        }
+    fun isFieldsValid(): Boolean {
+        return validateEmail() && validateUsername() && validatePassword() && validatePasswordConfirm()
     }
 
     private fun validateEmail(): Boolean {

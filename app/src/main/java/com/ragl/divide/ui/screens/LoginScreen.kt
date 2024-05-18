@@ -1,7 +1,5 @@
 package com.ragl.divide.ui.screens
 
-import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,7 +53,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -64,7 +61,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.ui.theme.AppTypography
 import kotlinx.coroutines.launch
@@ -73,7 +69,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
-    onSuccess: () -> Unit
+    onGoogleButtonClick: () -> Unit,
+    onLoginButtonClick: (email: String, password: String) -> Unit,
+    onSignUpButtonClick: (email: String, password: String, username: String) -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf(stringResource(id = R.string.log_in), stringResource(id = R.string.sign_up))
@@ -134,9 +132,8 @@ fun LoginScreen(
             state = pagerState
         ) { pagerIndex ->
             when (pagerIndex) {
-                0 -> Login(onSuccess = onSuccess)
-
-                1 -> SignUp(onSuccess = onSuccess)
+                0 -> Login(onLoginButtonClick, onGoogleButtonClick)
+                1 -> SignUp(onSignUpButtonClick, onGoogleButtonClick)
             }
         }
     }
@@ -144,12 +141,8 @@ fun LoginScreen(
 
 @Composable
 private fun SocialMediaRow(
-    context: Context,
-    onSuccess: () -> Unit,
-    onFail: (String) -> Unit,
-    gvm: GoogleViewModel = hiltViewModel()
+    onGoogleButtonClick: () -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
     Row {
         Icon(
             painter = painterResource(id = R.drawable.ic_google),
@@ -159,12 +152,7 @@ private fun SocialMediaRow(
                 .size(36.dp)
                 .clip(ShapeDefaults.ExtraLarge)
                 .clickable {
-                    gvm.signInWithGoogle(
-                        context = context,
-                        coroutineScope = coroutineScope,
-                        onSuccessfulLogin = onSuccess,
-                        onFailedLogin = { onFail(it) }
-                    )
+                    onGoogleButtonClick()
                 }
         )
         Spacer(modifier = Modifier.width(32.dp))
@@ -182,10 +170,10 @@ private fun SocialMediaRow(
 
 @Composable
 private fun Login(
-    onSuccess: () -> Unit,
-    vm: LoginViewModel = hiltViewModel()
+    onLoginButtonClick: (String, String) -> Unit,
+    onGoogleButtonClick: () -> Unit
 ) {
-    val context = LocalContext.current
+    val vm: LoginViewModel = remember { LoginViewModel() }
     Column(
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 20.dp)
@@ -206,11 +194,7 @@ private fun Login(
         )
         LoginButton(
             label = stringResource(R.string.log_in),
-            onClick = {
-                vm.tryLogin(onSuccessfulLogin = onSuccess, onFailedLogin = {
-                    Toast.makeText(context, "Login Failed", Toast.LENGTH_SHORT).show()
-                })
-            },
+            onClick = { if (vm.isFieldsValid()) onLoginButtonClick(vm.email, vm.password) },
             modifier = Modifier.padding(vertical = 8.dp)
         )
         Spacer(modifier = Modifier.height(20.dp))
@@ -221,20 +205,16 @@ private fun Login(
             style = AppTypography.titleMedium
         )
         Spacer(modifier = Modifier.height(20.dp))
-        SocialMediaRow(
-            context = context,
-            onSuccess = onSuccess,
-            onFail = {Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-        )
+        SocialMediaRow(onGoogleButtonClick)
     }
 }
 
 @Composable
 fun SignUp(
-    onSuccess: () -> Unit,
-    vm: SignupViewModel = hiltViewModel()
+    onSignUpButtonClick: (String, String, String) -> Unit,
+    onGoogleButtonClick: () -> Unit
 ) {
-    val context = LocalContext.current
+    val vm: SignupViewModel = remember {SignupViewModel() }
     Column(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -270,11 +250,7 @@ fun SignUp(
         )
         LoginButton(
             label = stringResource(R.string.sign_up),
-            onClick = {
-                vm.trySignup(onSuccessfulLogin = onSuccess, onFailedLogin = {
-                    Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                })
-            },
+            onClick = { if (vm.isFieldsValid()) onSignUpButtonClick(vm.email, vm.password, vm.username) },
             modifier = Modifier.padding(vertical = 8.dp)
         )
         Spacer(modifier = Modifier.height(20.dp))
@@ -285,11 +261,7 @@ fun SignUp(
             style = AppTypography.titleMedium
         )
         Spacer(modifier = Modifier.height(20.dp))
-        SocialMediaRow(
-            context = context,
-            onSuccess = onSuccess,
-            onFail = {Toast.makeText(context, it, Toast.LENGTH_SHORT).show()}
-        )
+        SocialMediaRow(onGoogleButtonClick)
     }
 }
 
@@ -331,13 +303,13 @@ private fun LoginButton(
 
 @Composable
 private fun LoginTextField(
+    modifier: Modifier = Modifier,
     label: String,
     input: String,
     error: String = "",
     onValueChange: (String) -> Unit,
     isPassword: Boolean = false,
-    onDone: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onDone: () -> Unit = {}
 ) {
     var passwordVisible by rememberSaveable {
         mutableStateOf(false)
