@@ -1,21 +1,21 @@
 package com.ragl.divide.ui.screens
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.google.firebase.auth.FirebaseAuth
+import com.ragl.divide.data.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private var auth: FirebaseAuth
+    private var userRepository: UserRepository
 ) : ViewModel() {
-
     fun logout(onSignOut: () -> Unit) {
-        auth.signOut()
-        auth.addAuthStateListener {
-            if (it.currentUser == null)
-                onSignOut()
+        try {
+            userRepository.signOut()
+            if (userRepository.getFirebaseUser() == null) onSignOut()
+        } catch (e: Exception) {
+            Log.e("HomeViewModel", e.message.toString())
         }
     }
-
 }

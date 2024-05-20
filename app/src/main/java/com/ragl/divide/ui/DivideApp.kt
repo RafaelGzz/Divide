@@ -2,10 +2,7 @@ package com.ragl.divide.ui
 
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -21,36 +18,37 @@ fun DivideApp(
     userViewModel: UserViewModel = hiltViewModel(),
     navController: NavHostController = rememberNavController()
 ) {
-    Scaffold { padding ->
-        val context = LocalContext.current
-        val startDestination = if (userViewModel.user != null) "Home" else "Login"
-        NavHost(navController = navController, startDestination = startDestination) {
-            composable("Login") {
-                LoginScreen(
-                    onGoogleButtonClick = {
-                        userViewModel.signInWithGoogle(
-                            context,
-                            { navigateTo(navController, "Home", "Login") },
-                            { showToast(context, it) }
-                        )
-                    },
-                    onLoginButtonClick = { email, password ->
-                        userViewModel.signInWithEmailAndPassword(email, password,
-                            { navigateTo(navController, "Home", "Login") },
-                            { showToast(context, it) })
-                    },
-                    onSignUpButtonClick = { email, password, name ->
-                        userViewModel.signUpWithEmailAndPassword(email, password, name,
-                            { navigateTo(navController, "Home", "Login") },
-                            { showToast(context, it) })
-                    },
-                    modifier = Modifier.padding(padding)
-                )
-            }
+    val context = LocalContext.current
+    val startDestination = if (userViewModel.user != null) "Home" else "Login"
+    NavHost(navController = navController, startDestination = startDestination) {
+        composable("Login") {
+            LoginScreen(
+                onGoogleButtonClick = {
+                    userViewModel.signInWithGoogle(
+                        context,
+                        { navigateTo(navController, "Home", "Login") },
+                        { showToast(context, it) }
+                    )
+                },
+                onLoginButtonClick = { email, password ->
+                    userViewModel.signInWithEmailAndPassword(email, password,
+                        { navigateTo(navController, "Home", "Login") },
+                        { showToast(context, it) })
+                },
+                onSignUpButtonClick = { email, password, name ->
+                    userViewModel.signUpWithEmailAndPassword(email, password, name,
+                        { navigateTo(navController, "Home", "Login") },
+                        { showToast(context, it) })
+                },
+                isLoading = userViewModel.isLoading
+            )
+        }
 
-            composable("Home") {
-                HomeScreen(onLogOut = { navigateTo(navController, "Login", "Home") })
-            }
+        composable("Home") {
+            HomeScreen(
+                onLogOut = { navigateTo(navController, "Login", "Home") },
+                user = userViewModel.user!!
+            )
         }
     }
 }

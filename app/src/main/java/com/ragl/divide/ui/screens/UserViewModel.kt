@@ -27,6 +27,15 @@ class UserViewModel @Inject constructor(
     var user by mutableStateOf<User?>(null)
         private set
 
+    var isLoading by mutableStateOf(false)
+        private set
+
+    init {
+        viewModelScope.launch {
+            isLoading = false
+            user = userRepository.getDatabaseUser()
+        }
+    }
     fun signInWithEmailAndPassword(
         email: String, password: String,
         onSuccessfulLogin: () -> Unit,
@@ -34,12 +43,15 @@ class UserViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
+                isLoading = true
                 user = userRepository.signInWithEmailAndPassword(email, password)
                 if (user != null) onSuccessfulLogin()
                 else onFailedLogin("Failed to Log in")
             } catch (e: Exception) {
                 Log.e("UserViewModel", "signInWithEmailAndPassword: ", e)
                 onFailedLogin(e.message ?: "Unknown error")
+            } finally {
+                isLoading = false
             }
         }
     }
@@ -51,12 +63,15 @@ class UserViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
+                isLoading = true
                 user = userRepository.signUpWithEmailAndPassword(email, password, name)
                 if (user != null) onSuccessfulLogin()
                 else onFailedLogin("Failed to Log in")
             } catch (e: Exception) {
                 onFailedLogin(e.message ?: "Unknown error")
-                Log.e("UserViewModel", "signInWithEmailAndPassword: ", e)
+                Log.e("UserViewModel", "signUpWithEmailAndPassword: ", e)
+            } finally {
+                isLoading = false
             }
         }
     }
@@ -68,6 +83,7 @@ class UserViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
+                isLoading = true
                 val authCredential = getAuthCredential(context)
                 user = userRepository.signInWithCredential(
                     authCredential
@@ -79,7 +95,9 @@ class UserViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 onFailedLogin(e.message ?: "Unknown error")
-                Log.e("UserViewModel", "signInWithEmailAndPassword: ", e)
+                Log.e("UserViewModel", "signInWithGoogle: ", e)
+            } finally {
+                isLoading = false
             }
         }
     }

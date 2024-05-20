@@ -16,7 +16,7 @@ interface UserRepository {
 
     suspend fun createUserInDatabase(): User
 
-    suspend fun getUser(): User?
+    suspend fun getDatabaseUser(): User?
 
     fun getFirebaseUser(): FirebaseUser?
 
@@ -24,6 +24,7 @@ interface UserRepository {
 
     suspend fun signInWithEmailAndPassword(email: String, password: String): User?
     suspend fun signUpWithEmailAndPassword(email: String, password: String, name: String): User?
+    fun signOut()
 }
 
 @Singleton
@@ -51,7 +52,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun signInWithEmailAndPassword(email: String, password: String): User? {
         val user = auth.signInWithEmailAndPassword(email, password).await().user
         return if (user != null) {
-            getUser()
+            getDatabaseUser()
         } else {
             null
         }
@@ -75,7 +76,7 @@ class UserRepositoryImpl @Inject constructor(
         return userData
     }
 
-    override suspend fun getUser(): User? {
+    override suspend fun getDatabaseUser(): User? {
         val user = getFirebaseUser() ?: return null
         val userRef = database.getReference("users/${user.uid}")
         val snapshot = userRef.get().await()
@@ -92,10 +93,14 @@ class UserRepositoryImpl @Inject constructor(
             if (res.additionalUserInfo!!.isNewUser) {
                 createUserInDatabase()
             } else
-                getUser()
+                getDatabaseUser()
         } else {
             null
         }
+    }
+
+    override fun signOut() {
+        auth.signOut()
     }
 
 }

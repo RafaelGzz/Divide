@@ -28,10 +28,12 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -71,7 +73,8 @@ fun LoginScreen(
     modifier: Modifier = Modifier,
     onGoogleButtonClick: () -> Unit,
     onLoginButtonClick: (email: String, password: String) -> Unit,
-    onSignUpButtonClick: (email: String, password: String, username: String) -> Unit
+    onSignUpButtonClick: (email: String, password: String, username: String) -> Unit,
+    isLoading: Boolean
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf(stringResource(id = R.string.log_in), stringResource(id = R.string.sign_up))
@@ -80,60 +83,82 @@ fun LoginScreen(
     LaunchedEffect(pagerState.currentPage) {
         selectedTabIndex = pagerState.currentPage
     }
-    Column(
-        modifier = modifier
+    Scaffold { paddingValues ->
+        Box(modifier = Modifier
             .fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Spacer(modifier = Modifier.height(40.dp))
-            Text(
-                text = stringResource(id = R.string.app_name),
-                style = AppTypography.headlineLarge.copy(
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-            TabRow(selectedTabIndex = selectedTabIndex) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = {
-                            scope.launch {
-                                pagerState.animateScrollToPage(index)
-                            }
-                            selectedTabIndex = index
-                        },
-                        text = { Text(text = title) },
-                        selectedContentColor = MaterialTheme.colorScheme.onSurface,
-                        unselectedContentColor = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.height(64.dp)
+            .padding(paddingValues)) {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Spacer(modifier = Modifier.height(40.dp))
+                    Text(
+                        text = stringResource(id = R.string.app_name),
+                        style = AppTypography.headlineLarge.copy(
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    TabRow(selectedTabIndex = selectedTabIndex) {
+                        tabs.forEachIndexed { index, title ->
+                            Tab(
+                                selected = selectedTabIndex == index,
+                                onClick = {
+                                    scope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
+                                    selectedTabIndex = index
+                                },
+                                text = { Text(text = title) },
+                                selectedContentColor = MaterialTheme.colorScheme.onSurface,
+                                unselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.height(64.dp)
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(16.dp)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = .08f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
                     )
                 }
+                HorizontalPager(
+                    state = pagerState
+                ) { pagerIndex ->
+                    when (pagerIndex) {
+                        0 -> Login(onLoginButtonClick, onGoogleButtonClick)
+                        1 -> SignUp(onSignUpButtonClick, onGoogleButtonClick)
+                    }
+                }
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(16.dp)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = .08f),
-                                Color.Transparent
-                            )
-                        )
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f))
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .height(64.dp)
+                            .width(64.dp)
+                            .align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.secondary
                     )
-            )
-        }
-        HorizontalPager(
-            state = pagerState
-        ) { pagerIndex ->
-            when (pagerIndex) {
-                0 -> Login(onLoginButtonClick, onGoogleButtonClick)
-                1 -> SignUp(onSignUpButtonClick, onGoogleButtonClick)
+                }
             }
         }
     }
@@ -214,7 +239,7 @@ fun SignUp(
     onSignUpButtonClick: (String, String, String) -> Unit,
     onGoogleButtonClick: () -> Unit
 ) {
-    val vm: SignupViewModel = remember {SignupViewModel() }
+    val vm: SignupViewModel = remember { SignupViewModel() }
     Column(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -250,7 +275,13 @@ fun SignUp(
         )
         LoginButton(
             label = stringResource(R.string.sign_up),
-            onClick = { if (vm.isFieldsValid()) onSignUpButtonClick(vm.email, vm.password, vm.username) },
+            onClick = {
+                if (vm.isFieldsValid()) onSignUpButtonClick(
+                    vm.email,
+                    vm.password,
+                    vm.username
+                )
+            },
             modifier = Modifier.padding(vertical = 8.dp)
         )
         Spacer(modifier = Modifier.height(20.dp))
