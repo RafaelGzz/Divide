@@ -1,4 +1,4 @@
-package com.ragl.divide.ui.screens
+package com.ragl.divide.ui.screens.login
 
 import android.util.Patterns
 import androidx.compose.runtime.getValue

@@ -9,4 +9,6 @@
     <string name="log_in">Log In</string>
     <string name="sign_up">Sign Up</string>
     <string name="username">Username</string>
+    <string name="log_out_text">Log Out</string>
+    <string name="welcome_text">Welcome %1$s</string>
 </resources>

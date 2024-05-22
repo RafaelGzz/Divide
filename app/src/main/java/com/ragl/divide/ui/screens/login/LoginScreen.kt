@@ -1,4 +1,4 @@
-package com.ragl.divide.ui.screens
+package com.ragl.divide.ui.screens.login
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background

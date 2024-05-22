@@ -14,28 +14,43 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.GoogleAuthProvider
 import com.ragl.divide.BuildConfig
+import com.ragl.divide.data.PreferencesRepository
 import com.ragl.divide.data.UserRepository
 import com.ragl.divide.data.models.User
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.internal.wait
 import javax.inject.Inject
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
     var user by mutableStateOf<User?>(null)
         private set
 
-    var isLoading by mutableStateOf(false)
-        private set
+    private var _isLoading = MutableStateFlow(false)
+    var isLoading = _isLoading.asStateFlow()
+
+    private var _startDestination = MutableStateFlow("Splash")
+    var startDestination = _startDestination.asStateFlow()
 
     init {
         viewModelScope.launch {
-            isLoading = false
             user = userRepository.getDatabaseUser()
+            preferencesRepository.startDestinationFlow.collect {
+                _startDestination.value = it.ifEmpty { "Login" }
+            }
+            _isLoading.value = false
+            Log.i("UserViewModel", "init: $isLoading")
         }
     }
+
     fun signInWithEmailAndPassword(
         email: String, password: String,
         onSuccessfulLogin: () -> Unit,
@@ -43,15 +58,17 @@ class UserViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                isLoading = true
+                _isLoading.value = true
                 user = userRepository.signInWithEmailAndPassword(email, password)
-                if (user != null) onSuccessfulLogin()
-                else onFailedLogin("Failed to Log in")
+                if (user != null) {
+                    preferencesRepository.saveStartDestination("Home")
+                    onSuccessfulLogin()
+                } else onFailedLogin("Failed to Log in")
             } catch (e: Exception) {
                 Log.e("UserViewModel", "signInWithEmailAndPassword: ", e)
                 onFailedLogin(e.message ?: "Unknown error")
             } finally {
-                isLoading = false
+                _isLoading.value = false
             }
         }
     }
@@ -63,15 +80,17 @@ class UserViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                isLoading = true
+                _isLoading.value = true
                 user = userRepository.signUpWithEmailAndPassword(email, password, name)
-                if (user != null) onSuccessfulLogin()
-                else onFailedLogin("Failed to Log in")
+                if (user != null) {
+                    preferencesRepository.saveStartDestination("Home")
+                    onSuccessfulLogin()
+                } else onFailedLogin("Failed to Log in")
             } catch (e: Exception) {
                 onFailedLogin(e.message ?: "Unknown error")
                 Log.e("UserViewModel", "signUpWithEmailAndPassword: ", e)
             } finally {
-                isLoading = false
+                _isLoading.value = false
             }
         }
     }
@@ -83,12 +102,13 @@ class UserViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                isLoading = true
+                _isLoading.value = true
                 val authCredential = getAuthCredential(context)
                 user = userRepository.signInWithCredential(
                     authCredential
                 )
                 if (user != null) {
+                    preferencesRepository.saveStartDestination("Home")
                     onSuccessfulLogin()
                 } else {
                     onFailedLogin("Failed to sign in")
@@ -97,7 +117,7 @@ class UserViewModel @Inject constructor(
                 onFailedLogin(e.message ?: "Unknown error")
                 Log.e("UserViewModel", "signInWithGoogle: ", e)
             } finally {
-                isLoading = false
+                _isLoading.value = false
             }
         }
     }

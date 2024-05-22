@@ -1,7 +1,9 @@
 [versions]
 agp = "8.4.0"
 coilCompose = "2.4.0"
+coreSplashscreen = "1.2.0-alpha01"
 credentialsPlayServicesAuth = "1.2.2"
+datastorePreferences = "1.1.1"
 firebaseBom = "33.0.0"
 googleid = "1.1.0"
 hiltAndroid = "2.51.1"
@@ -23,8 +25,10 @@ firebaseDatabaseKtx = "21.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentialsPlayServicesAuth" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentialsPlayServicesAuth" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigation" }
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
