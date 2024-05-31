@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.expenseDetails
 
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Expense
@@ -20,6 +21,8 @@ class ExpenseDetailsViewModel @Inject constructor(
     private val _expense = MutableStateFlow(Expense())
     val expense = _expense.asStateFlow()
 
+    val remainingBalance = mutableDoubleStateOf(0.0)
+
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
     fun setExpense(expenseId: String) {
@@ -30,6 +33,7 @@ class ExpenseDetailsViewModel @Inject constructor(
             _expense.update {
                 userRepository.getExpense(expenseId)
             }
+            remainingBalance.value = _expense.value.amount - _expense.value.amountPaid
             _isLoading.update {
                 false
             }
@@ -41,22 +45,20 @@ class ExpenseDetailsViewModel @Inject constructor(
             try {
                 userRepository.deleteExpense(id)
                 onSuccess()
-//                _expense.update {
-//                    Expense()
-//                }
             } catch (e: Exception) {
                 onFailure(e.message ?: "Something went wrong")
             }
         }
     }
 
-    fun deletePayment(paymentId: String, onFailure: (String) -> Unit) {
+    fun deletePayment(paymentId: String, amount: Double, onFailure: (String) -> Unit) {
         viewModelScope.launch {
             try {
                 userRepository.deleteExpensePayment(paymentId, _expense.value.id)
                 _expense.update {
                     it.copy(
-                        payments = userRepository.getExpensePayments(_expense.value.id)
+                        payments = userRepository.getExpensePayments(_expense.value.id),
+                        amountPaid = it.amountPaid - amount
                     )
                 }
             } catch (e: Exception) {
@@ -74,9 +76,11 @@ class ExpenseDetailsViewModel @Inject constructor(
                 )
                 _expense.update {
                     it.copy(
-                        payments = userRepository.getExpensePayments(_expense.value.id)
+                        payments = userRepository.getExpensePayments(_expense.value.id),
+                        amountPaid = it.amountPaid + amount
                     )
                 }
+                remainingBalance.value = _expense.value.amount - _expense.value.amountPaid
             } catch (e: Exception) {
                 onFailure(e.message ?: "Something went wrong")
             }

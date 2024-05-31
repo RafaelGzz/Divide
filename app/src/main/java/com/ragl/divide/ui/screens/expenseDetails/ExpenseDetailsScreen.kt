@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableDoubleState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -58,9 +59,10 @@ import java.util.Date
 fun ExpenseDetailsScreen(
     loadExpense: () -> Unit,
     expenseState: StateFlow<Expense>,
+    remainingBalanceState: MutableDoubleState,
     isLoadingState: StateFlow<Boolean>,
     deleteExpense: (String, () -> Unit, (String) -> Unit) -> Unit,
-    deletePayment: (String, (String) -> Unit) -> Unit,
+    deletePayment: (String, Double, (String) -> Unit) -> Unit,
     addPayment: (Long, (String) -> Unit) -> Unit,
     onBackClick: () -> Unit,
     onDeleteExpense: () -> Unit
@@ -79,6 +81,7 @@ fun ExpenseDetailsScreen(
     val context = LocalContext.current
     val expense by expenseState.collectAsState()
     val isLoading by isLoadingState.collectAsState()
+    val remainingBalance = remainingBalanceState.value
 
     Scaffold(
         topBar = {
@@ -118,6 +121,7 @@ fun ExpenseDetailsScreen(
                 }
                 if (isPaymentDialogVisible) {
                     PaymentAlertDialog(
+                        remainingBalance = remainingBalance,
                         onDismissRequest = { isPaymentDialogVisible = false },
                         onConfirmClick = { amount ->
                             addPayment(amount) { showToast(context, it) }
@@ -131,13 +135,19 @@ fun ExpenseDetailsScreen(
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.fillMaxWidth()
                 )
-                if (expense.numberOfPayments > 1)
-                    Text(
-                        text = stringResource(R.string.s_payments, expense.numberOfPayments),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                Text(
+                    text = stringResource(R.string.s_paid, expense.amountPaid),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.fillMaxWidth()
+                )
+//                if (expense.numberOfPayments > 1)
+//                    Text(
+//                        text = stringResource(R.string.s_payments, expense.numberOfPayments),
+//                        textAlign = TextAlign.Center,
+//                        style = MaterialTheme.typography.labelLarge,
+//                        modifier = Modifier.fillMaxWidth()
+//                    )
                 Text(
                     text = stringResource(
                         R.string.added_on,
@@ -209,7 +219,8 @@ fun ExpenseDetailsScreen(
                                     onClick = {
                                         onConfirmDeleteClick = {
                                             deletePayment(
-                                                it.key
+                                                it.key,
+                                                it.value.amount
                                             ) { showToast(context, it) }
                                             isDeleteDialogVisible = false
                                         }
@@ -312,7 +323,11 @@ fun DeleteAlertDialog(
 }
 
 @Composable
-fun PaymentAlertDialog(onDismissRequest: () -> Unit, onConfirmClick: (Long) -> Unit) {
+fun PaymentAlertDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmClick: (Long) -> Unit,
+    remainingBalance: Double
+) {
     var amount by remember { mutableStateOf("") }
     var amountError by remember { mutableStateOf("") }
     AlertDialog(
@@ -324,29 +339,37 @@ fun PaymentAlertDialog(onDismissRequest: () -> Unit, onConfirmClick: (Long) -> U
             Text(stringResource(R.string.make_a_payment))
         },
         text = {
-            DivideTextField(
-                label = stringResource(R.string.amount),
-                input = amount,
-                prefix = {
-                    Text(text = "$")
-                },
-                placeholder = {
-                    Text(text = "0")
-                },
-                imeAction = ImeAction.Go,
-                keyboardType = KeyboardType.NumberPassword,
-                error = amountError,
-                onValueChange = {
-                    if (it.isDigitsOnly()) {
-                        amount = it
-                    }
-                })
+            Column {
+                Text(
+                    text = stringResource(R.string.remaining_balance, remainingBalance),
+                    style = MaterialTheme.typography.labelSmall
+                )
+                DivideTextField(
+                    label = stringResource(R.string.amount),
+                    input = amount,
+                    prefix = {
+                        Text(text = "$")
+                    },
+                    placeholder = {
+                        Text(text = "0")
+                    },
+                    imeAction = ImeAction.Go,
+                    keyboardType = KeyboardType.NumberPassword,
+                    error = amountError,
+                    onValueChange = {
+                        if (it.isDigitsOnly()) {
+                            amount = it
+                        }
+                    })
+            }
         },
         confirmButton = {
             TextButton(onClick = {
-                if (amount.isNotEmpty() && amount.toLong() > 0)
-                    onConfirmClick(amount.toLong())
-                else amountError = "Required"
+                if (amount.isNotEmpty() && amount.toLong() > 0) {
+                    if (amount.toLong() <= remainingBalance)
+                        onConfirmClick(amount.toLong())
+                    else amountError = "Amount must be less than remaining balance"
+                } else amountError = "Required"
             }) {
                 Text(text = stringResource(R.string.ok))
             }

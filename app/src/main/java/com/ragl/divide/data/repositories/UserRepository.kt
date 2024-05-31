@@ -153,6 +153,10 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun addExpensePayment(payment: Payment, expenseId: String) {
         val user = getFirebaseUser() ?: return
         val id = "id${Date().time}"
+
+        val amountPaidRef = database.getReference("users/${user.uid}/expenses/$expenseId/amountPaid")
+        amountPaidRef.setValue(amountPaidRef.get().await().value as Long + payment.amount).await()
+
         val paymentsRef = database.getReference("users/${user.uid}/expenses/$expenseId/payments")
         paymentsRef.child(id).setValue(payment.copy(id = id)).await()
     }

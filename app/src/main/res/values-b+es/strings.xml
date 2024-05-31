@@ -57,4 +57,6 @@
     <string name="no">No</string>
     <string name="yes">Si</string>
     <string name="ok">OK</string>
+    <string name="remaining_balance">Saldo restante: %1$s</string>
+    <string name="s_paid">$%1$s pagado</string>
 </resources>

@@ -15,6 +15,7 @@ data class Expense(
     val title: String = "",
     val category: Category = Category.GENERAL,
     val amount: Double = 0.0,
+    val amountPaid: Double = 0.0,
     val numberOfPayments: Int = 1,
     val notes: String = "",
     val reminders: Boolean = false,

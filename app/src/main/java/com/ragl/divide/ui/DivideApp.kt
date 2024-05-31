@@ -93,11 +93,12 @@ fun DivideApp(
             ExpenseDetailsScreen(
                 expenseState = expenseDetailsViewModel.expense,
                 isLoadingState = expenseDetailsViewModel.isLoading,
+                remainingBalanceState = expenseDetailsViewModel.remainingBalance,
                 deleteExpense = { id, onSuccess, onFailure ->
                     expenseDetailsViewModel.deleteExpense(id, onSuccess, onFailure)
                 },
-                deletePayment = { id, onFailure ->
-                    expenseDetailsViewModel.deletePayment(id, onFailure)
+                deletePayment = { id, amount, onFailure ->
+                    expenseDetailsViewModel.deletePayment(id, amount, onFailure)
                 },
                 addPayment = { amount, onFailure ->
                     expenseDetailsViewModel.addPayment(amount, onFailure)
