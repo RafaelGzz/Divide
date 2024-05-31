@@ -13,6 +13,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.database
+import com.ragl.divide.data.repositories.GroupRepository
+import com.ragl.divide.data.repositories.GroupRepositoryImpl
+import com.ragl.divide.data.repositories.PreferencesRepository
+import com.ragl.divide.data.repositories.UserRepository
+import com.ragl.divide.data.repositories.UserRepositoryImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -60,5 +65,11 @@ object AppModule {
         firebaseAuth: FirebaseAuth,
         firebaseDatabase: FirebaseDatabase
     ): UserRepository = UserRepositoryImpl(firebaseAuth, firebaseDatabase)
+
+    @Provides
+    @Singleton
+    fun providesGroupRepository(
+        firebaseDatabase: FirebaseDatabase
+    ): GroupRepository = GroupRepositoryImpl(firebaseDatabase)
 
 }

@@ -1,9 +1,7 @@
 package com.ragl.divide.ui.screens.login
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -52,8 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -62,12 +58,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ragl.divide.R
 import com.ragl.divide.ui.theme.AppTypography
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
@@ -84,9 +80,11 @@ fun LoginScreen(
         selectedTabIndex = pagerState.currentPage
     }
     Scaffold { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
             Column(
                 modifier = modifier
                     .fillMaxSize()
@@ -121,26 +119,23 @@ fun LoginScreen(
                             )
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(16.dp)
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Black.copy(alpha = .08f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
-                    )
                 }
                 HorizontalPager(
                     state = pagerState
                 ) { pagerIndex ->
                     when (pagerIndex) {
-                        0 -> Login(onLoginButtonClick, onGoogleButtonClick)
-                        1 -> SignUp(onSignUpButtonClick, onGoogleButtonClick)
+                        0 -> Login(
+                            Modifier
+                                .padding(horizontal = 16.dp, vertical = 20.dp)
+                                .fillMaxHeight(), onLoginButtonClick, onGoogleButtonClick
+                        )
+
+                        1 -> SignUp(
+                            Modifier
+                                .padding(horizontal = 16.dp, vertical = 20.dp)
+                                .verticalScroll(state = rememberScrollState())
+                                .fillMaxHeight(), onSignUpButtonClick, onGoogleButtonClick
+                        )
                     }
                 }
             }
@@ -195,27 +190,30 @@ private fun SocialMediaRow(
 
 @Composable
 private fun Login(
+    modifier: Modifier = Modifier,
     onLoginButtonClick: (String, String) -> Unit,
     onGoogleButtonClick: () -> Unit
 ) {
     val vm: LoginViewModel = remember { LoginViewModel() }
     Column(
-        modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 20.dp)
-            .fillMaxHeight()
+        modifier = modifier
     ) {
-        LoginTextField(
+        DivideTextField(
             label = stringResource(R.string.email_address_text),
             input = vm.email,
             error = vm.emailError,
+            imeAction = ImeAction.Next,
             onValueChange = { vm.updateEmail(it) },
         )
-        LoginTextField(
+        DivideTextField(
             label = stringResource(R.string.password_text),
             input = vm.password,
             error = vm.passwordError,
-            isPassword = true,
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+            //isPassword = true,
             onValueChange = { vm.updatePassword(it) },
+            onDone = { if (vm.isFieldsValid()) onLoginButtonClick(vm.email, vm.password) }
         )
         LoginButton(
             label = stringResource(R.string.log_in),
@@ -236,41 +234,44 @@ private fun Login(
 
 @Composable
 fun SignUp(
+    modifier: Modifier = Modifier,
     onSignUpButtonClick: (String, String, String) -> Unit,
     onGoogleButtonClick: () -> Unit
 ) {
     val vm: SignupViewModel = remember { SignupViewModel() }
     Column(
-        modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .verticalScroll(state = rememberScrollState())
-            .fillMaxHeight()
+        modifier = modifier
     ) {
-        LoginTextField(
+        DivideTextField(
             label = stringResource(R.string.email_address_text),
             input = vm.email,
             error = vm.emailError,
-            onValueChange = { vm.updateEmail(it) },
-            modifier = Modifier.padding(top = 20.dp)
+            imeAction = ImeAction.Next,
+            onValueChange = { vm.updateEmail(it) }
         )
-        LoginTextField(
+        DivideTextField(
             label = stringResource(R.string.username),
             input = vm.username,
             error = vm.usernameError,
+            imeAction = ImeAction.Next,
             onValueChange = { vm.updateUsername(it) },
         )
-        LoginTextField(
+        DivideTextField(
             label = stringResource(R.string.password_text),
             input = vm.password,
             error = vm.passwordError,
-            isPassword = true,
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Next,
+            //isPassword = true,
             onValueChange = { vm.updatePassword(it) },
         )
-        LoginTextField(
+        DivideTextField(
             label = stringResource(R.string.confirm_password_text),
             input = vm.passwordConfirm,
             error = vm.passwordConfirmError,
-            isPassword = true,
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+            //isPassword = true,
             onValueChange = { vm.updatePasswordConfirm(it) },
         )
         LoginButton(
@@ -308,18 +309,13 @@ private fun LoginButton(
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
         contentPadding = PaddingValues(),
         shape = ShapeDefaults.ExtraSmall,
-        modifier = modifier.shadow(4.dp, shape = ShapeDefaults.Medium)
+        modifier = modifier.clip(ShapeDefaults.Medium)
     ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.secondary
-                        )
-                    )
+                    MaterialTheme.colorScheme.primary
                 )
                 .fillMaxWidth()
                 .height(64.dp)
@@ -333,17 +329,60 @@ private fun LoginButton(
 }
 
 @Composable
-private fun LoginTextField(
+fun DivideTextField(
     modifier: Modifier = Modifier,
+    prefix: @Composable (() -> Unit)? = null,
+    suffix: @Composable (() -> Unit)? = null,
     label: String,
     input: String,
+    placeholder: @Composable (() -> Unit)? = null,
+    singleLine: Boolean = true,
+    errorText: Boolean = true,
     error: String = "",
+    keyboardType: KeyboardType = KeyboardType.Text,
+    imeAction: ImeAction = ImeAction.Next,
+    autoCorrect: Boolean = true,
     onValueChange: (String) -> Unit,
-    isPassword: Boolean = false,
     onDone: () -> Unit = {}
 ) {
     var passwordVisible by rememberSaveable {
         mutableStateOf(false)
+    }
+    var icon by remember { mutableStateOf<@Composable (() -> Unit)?>(null) }
+    LaunchedEffect(input) {
+        if (input.isNotEmpty()) {
+            icon = when (keyboardType) {
+                KeyboardType.Password -> {
+                    {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible)
+                                    Icons.Filled.Visibility
+                                else Icons.Filled.VisibilityOff,
+                                if (passwordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    }
+                }
+
+                KeyboardType.Text -> {
+                    {
+                        IconButton(onClick = { onValueChange("") }) {
+                            Icon(
+                                imageVector = Icons.Filled.Clear,
+                                contentDescription = "Clear"
+                            )
+                        }
+                    }
+                }
+
+                else -> {
+                    null
+                }
+            }
+        } else {
+            icon = null
+        }
     }
     Column(modifier = modifier) {
         Text(
@@ -354,42 +393,22 @@ private fun LoginTextField(
         )
         TextField(
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
             ),
-            singleLine = true,
+            prefix = prefix,
+            suffix = suffix,
+            placeholder = placeholder,
+            singleLine = singleLine,
             value = input,
-            visualTransformation = if (!passwordVisible && isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-            trailingIcon = {
-                if (input.isNotEmpty()) {
-                    if (isPassword) {
-                        val image = if (passwordVisible)
-                            Icons.Filled.Visibility
-                        else Icons.Filled.VisibilityOff
-
-                        // Please provide localized description for accessibility services
-                        val description =
-                            if (passwordVisible) "Hide password" else "Show password"
-
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(imageVector = image, description)
-                        }
-                    } else {
-                        IconButton(onClick = { onValueChange("") }) {
-                            Icon(
-                                imageVector = Icons.Filled.Clear,
-                                contentDescription = "Clear"
-                            )
-                        }
-                    }
-                }
-            },
+            visualTransformation = if (!passwordVisible && keyboardType == KeyboardType.Password) PasswordVisualTransformation() else VisualTransformation.None,
+            trailingIcon = icon,
             keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = if (isPassword) ImeAction.Done else ImeAction.Next,
-                keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text,
-                autoCorrect = !isPassword
+                imeAction = imeAction,
+                keyboardType = keyboardType,
+                autoCorrectEnabled = autoCorrect
             ),
             keyboardActions = KeyboardActions(
                 onDone = { onDone() }
@@ -397,15 +416,45 @@ private fun LoginTextField(
             onValueChange = { onValueChange(it) },
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(elevation = 4.dp, shape = ShapeDefaults.Medium)
+                .clip(ShapeDefaults.Medium)
         )
-        Text(
-            text = error,
-            color = MaterialTheme.colorScheme.error,
-            style = AppTypography.labelSmall,
-            modifier = Modifier.padding(vertical = 4.dp)
-        )
+        if (errorText)
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = AppTypography.labelSmall,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
 
     }
 
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoginScreenPreview() {
+    LoginScreen(
+        isLoading = false,
+        onGoogleButtonClick = {},
+        onSignUpButtonClick = { _, _, _ -> },
+        onLoginButtonClick = { _, _ -> },
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoginPreview() {
+    Login(
+        onLoginButtonClick = { _, _ -> },
+        onGoogleButtonClick = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SignUpPreview() {
+    SignUp(
+        onSignUpButtonClick = { _, _, _ -> },
+        onGoogleButtonClick = {}
+    )
 }
