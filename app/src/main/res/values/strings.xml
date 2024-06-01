@@ -58,5 +58,8 @@
     <string name="yes">Yes</string>
     <string name="ok">OK</string>
     <string name="remaining_balance">Remaining balance: %1$s</string>
-    <string name="s_paid">$%1$s paid</string>
+    <string name="s_paid">%1$s paid</string>
+    <string name="payment">%1$s (%2$s payment%3$s)</string>
+    <string name="amount_must_be_less_than_remaining_balance">Amount must be less than remaining balance</string>
+    <string name="required">Required</string>
 </resources>

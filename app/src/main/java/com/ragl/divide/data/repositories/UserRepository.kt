@@ -30,10 +30,10 @@ interface UserRepository {
     fun signOut()
     suspend fun getExpense(id: String): Expense
     suspend fun getExpenses(): Map<String, Expense>
-    suspend fun addExpense(expense: Expense)
+    suspend fun saveExpense(expense: Expense)
     suspend fun deleteExpense(id: String)
     suspend fun getExpensePayments(expenseId: String): Map<String, Payment>
-    suspend fun addExpensePayment(payment: Payment, expenseId: String)
+    suspend fun saveExpensePayment(payment: Payment, expenseId: String)
     suspend fun deleteExpensePayment(paymentId: String, expenseId: String)
 }
 
@@ -131,7 +131,7 @@ class UserRepositoryImpl @Inject constructor(
         return expenses
     }
 
-    override suspend fun addExpense(expense: Expense) {
+    override suspend fun saveExpense(expense: Expense) {
         val user = getFirebaseUser() ?: return
         val id = "id${Date().time}"
         val expensesRef = database.getReference("users/${user.uid}/expenses")
@@ -150,7 +150,7 @@ class UserRepositoryImpl @Inject constructor(
         return payments
     }
 
-    override suspend fun addExpensePayment(payment: Payment, expenseId: String) {
+    override suspend fun saveExpensePayment(payment: Payment, expenseId: String) {
         val user = getFirebaseUser() ?: return
         val id = "id${Date().time}"
 

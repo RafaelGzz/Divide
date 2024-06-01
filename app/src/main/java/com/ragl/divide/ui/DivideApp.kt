@@ -68,7 +68,7 @@ fun DivideApp(
             HomeScreen(
                 onAddExpenseClick = {
                     navController.navTo(
-                        Screen.AddExpense
+                        Screen.AddExpense()
                     )
                 },
                 onAddGroupClick = {
@@ -84,7 +84,7 @@ fun DivideApp(
         }
         composable<Screen.AddExpense> {
             ExpenseScreen(
-                onBackClick = {navController.popBackStack() },
+                onBackClick = { navController.popBackStack() },
                 onAddExpense = { navController.navTo(Screen.Home, true) },
             )
         }
@@ -93,7 +93,9 @@ fun DivideApp(
             ExpenseDetailsScreen(
                 expenseState = expenseDetailsViewModel.expense,
                 isLoadingState = expenseDetailsViewModel.isLoading,
-                remainingBalanceState = expenseDetailsViewModel.remainingBalance,
+                editExpense = { id ->
+                    navController.navTo(Screen.AddExpense(expenseId = id))
+                },
                 deleteExpense = { id, onSuccess, onFailure ->
                     expenseDetailsViewModel.deleteExpense(id, onSuccess, onFailure)
                 },
@@ -114,6 +116,7 @@ fun DivideApp(
         }
     }
 }
+
 fun NavHostController.navTo(route: Screen, pop: Boolean = false) = navigate(route) {
     if (pop) popUpTo(route) {
         inclusive = false

@@ -123,7 +123,7 @@ class ExpenseViewModel @Inject constructor(
         if (validateTitle() && validateAmount() && validatePayments()) {
             viewModelScope.launch {
                 try {
-                    userRepository.addExpense(
+                    userRepository.saveExpense(
                         Expense(
                             title = title,
                             amount = amount.toDouble(),

@@ -1,6 +1,5 @@
 package com.ragl.divide.ui.screens.expenseDetails
 
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Expense
@@ -21,8 +20,6 @@ class ExpenseDetailsViewModel @Inject constructor(
     private val _expense = MutableStateFlow(Expense())
     val expense = _expense.asStateFlow()
 
-    val remainingBalance = mutableDoubleStateOf(0.0)
-
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
     fun setExpense(expenseId: String) {
@@ -33,7 +30,6 @@ class ExpenseDetailsViewModel @Inject constructor(
             _expense.update {
                 userRepository.getExpense(expenseId)
             }
-            remainingBalance.value = _expense.value.amount - _expense.value.amountPaid
             _isLoading.update {
                 false
             }
@@ -70,7 +66,7 @@ class ExpenseDetailsViewModel @Inject constructor(
     fun addPayment(amount: Long, onFailure: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                userRepository.addExpensePayment(
+                userRepository.saveExpensePayment(
                     Payment(amount = amount.toDouble()),
                     expenseId = _expense.value.id
                 )
@@ -80,7 +76,6 @@ class ExpenseDetailsViewModel @Inject constructor(
                         amountPaid = it.amountPaid + amount
                     )
                 }
-                remainingBalance.value = _expense.value.amount - _expense.value.amountPaid
             } catch (e: Exception) {
                 onFailure(e.message ?: "Something went wrong")
             }
