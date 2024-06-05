@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -30,6 +31,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
@@ -66,9 +68,15 @@ import java.util.Date
 @Composable
 fun ExpenseScreen(
     vm: ExpenseViewModel = hiltViewModel(),
+    expenseId: String,
     onBackClick: () -> Unit,
     onAddExpense: () -> Unit
 ) {
+
+    LaunchedEffect(Unit) {
+        if (expenseId.isNotEmpty()) vm.setViewModelExpense(expenseId)
+    }
+
     var categoryMenuExpanded by remember { mutableStateOf(false) }
     var frequencyMenuExpanded by remember { mutableStateOf(false) }
     var paymentSuffix by remember { mutableIntStateOf(R.string.payments) }
@@ -83,12 +91,12 @@ fun ExpenseScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.add_expense)) },
+                title = { Text(stringResource(if (expenseId.isEmpty()) R.string.add_expense else R.string.update_expense)) },
                 navigationIcon = {
                     IconButton(
                         onClick = onBackClick
                     ) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -96,7 +104,7 @@ fun ExpenseScreen(
         bottomBar = {
             Button(
                 onClick = {
-                    vm.addExpense(onSuccess = { onAddExpense() }, onError = {
+                    vm.saveExpense(onSuccess = { onAddExpense() }, onError = {
                         Toast.makeText(
                             context, it, Toast.LENGTH_SHORT
                         ).show()
@@ -108,7 +116,10 @@ fun ExpenseScreen(
                     .height(128.dp)
                     .padding(horizontal = 16.dp, vertical = 32.dp)
             ) {
-                Text(text = stringResource(R.string.add), style = AppTypography.titleMedium)
+                Text(
+                    text = stringResource(if (expenseId.isEmpty()) R.string.add else R.string.update),
+                    style = AppTypography.titleMedium
+                )
             }
 
         }
@@ -167,7 +178,7 @@ fun ExpenseScreen(
                                 readOnly = true,
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryMenuExpanded) },
                                 modifier = Modifier
-                                    .menuAnchor()
+                                    .menuAnchor(MenuAnchorType.PrimaryEditable)
                                     .clip(ShapeDefaults.Medium)
                             )
                             ExposedDropdownMenu(
@@ -286,7 +297,7 @@ fun ExpenseScreen(
                                         )
                                     },
                                     modifier = Modifier
-                                        .menuAnchor()
+                                        .menuAnchor(MenuAnchorType.PrimaryEditable)
                                         .clip(ShapeDefaults.Medium)
                                 )
                                 ExposedDropdownMenu(
@@ -344,11 +355,10 @@ fun FrequencyStartingDatePicker(
     onConfirmClick: (Long) -> Unit,
     time: Long
 ) {
-    val state = rememberDatePickerState()
-    state.setSelection(time)
+    val state = rememberDatePickerState(initialSelectedDateMillis = time)
     DatePickerDialog(
         onDismissRequest = onDismissRequest,
-        colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         confirmButton = {
             TextButton(
                 onClick = {
@@ -363,6 +373,12 @@ fun FrequencyStartingDatePicker(
             }
         }
     ) {
-        DatePicker(state = state)
+        DatePicker(
+            state = state,
+            colors = DatePickerDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                titleContentColor = MaterialTheme.colorScheme.primary
+            )
+        )
     }
 }

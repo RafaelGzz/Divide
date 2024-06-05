@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.expense
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class ExpenseViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
+    private var id = ""
     var title by mutableStateOf("")
         private set
     var titleError by mutableStateOf("")
@@ -47,7 +49,7 @@ class ExpenseViewModel @Inject constructor(
         this.title = title
     }
 
-    fun validateTitle(): Boolean {
+    private fun validateTitle(): Boolean {
         return when (title.trim()) {
             "" -> {
                 this.titleError = "Title is required"
@@ -65,7 +67,7 @@ class ExpenseViewModel @Inject constructor(
         this.amount = amount
     }
 
-    fun validateAmount(): Boolean {
+    private fun validateAmount(): Boolean {
         return when (amount.trim()) {
             "" -> {
                 this.amountError = "Amount is required"
@@ -93,7 +95,7 @@ class ExpenseViewModel @Inject constructor(
         else this.payments = payments
     }
 
-    fun validatePayments(): Boolean {
+    private fun validatePayments(): Boolean {
         return when (payments.trim()) {
             "" -> {
                 this.paymentsError = "Payments is required"
@@ -119,12 +121,13 @@ class ExpenseViewModel @Inject constructor(
         this.startingDate = startingDate
     }
 
-    fun addExpense(onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun saveExpense(onSuccess: () -> Unit, onError: (String) -> Unit) {
         if (validateTitle() && validateAmount() && validatePayments()) {
             viewModelScope.launch {
                 try {
                     userRepository.saveExpense(
                         Expense(
+                            id = id,
                             title = title,
                             amount = amount.toDouble(),
                             category = category,
@@ -143,5 +146,22 @@ class ExpenseViewModel @Inject constructor(
         }
     }
 
-
+    fun setViewModelExpense(expenseId: String) {
+        viewModelScope.launch {
+            try {
+                val expense = userRepository.getExpense(expenseId)
+                id = expense.id
+                title = expense.title
+                amount = expense.amount.toString()
+                category = expense.category
+                reminders = expense.reminders
+                payments = expense.numberOfPayments.toString()
+                notes = expense.notes
+                frequency = expense.frequency
+                startingDate = expense.startingDate
+            } catch (e: Exception) {
+                Log.e("ExpenseViewModel", "Error fetching expense: ${e.message}")
+            }
+        }
+    }
 }

@@ -1,7 +1,6 @@
 package com.ragl.divide.ui.screens.home
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,12 +26,16 @@ import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,7 +63,7 @@ import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.theme.AppTypography
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -76,49 +79,68 @@ fun HomeScreen(
         Pair(R.string.bar_item_friends_text, Icons.Filled.People)
     )
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val pullToRefreshState = rememberPullToRefreshState()
 
     Scaffold { paddingValues ->
-        Column(
+        Box(
             modifier = modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(top = 20.dp)
         ) {
-            if (!uiState.isLoading) {
-                TopBar(
-                    user = uiState.user,
-                    onTapUserImage = { vm.signOut { onSignOut() } },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 20.dp)
-                        .weight(.1f)
-                )
-                Box(modifier = Modifier.weight(.8f)) {
-                    when (selectedTabIndex) {
-                        0 -> Home(
-                            uiState = uiState,
-                            onAddExpenseClick = onAddExpenseClick,
-                            onAddGroupClick = onAddGroupClick,
-                            onExpenseClick = { onExpenseClick(it) },
-                        )
+            Column(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .padding(top = 20.dp)
+            ) {
+                if (!uiState.isLoading) {
+                    TopBar(
+                        user = uiState.user,
+                        onTapUserImage = { vm.signOut { onSignOut() } },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp)
+                            .weight(.1f)
+                    )
+                    Box(modifier = Modifier.weight(.8f)) {
+                        PullToRefreshBox(
+                            isRefreshing = uiState.isLoading,
+                            state = pullToRefreshState,
+                            indicator = {
+                                Indicator(
+                                    modifier = Modifier.align(Alignment.TopCenter),
+                                    state = pullToRefreshState,
+                                    isRefreshing = uiState.isLoading,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            },
+                            onRefresh = { vm.getUserData() }) {
+                            when (selectedTabIndex) {
+                                0 -> Home(
+                                    uiState = uiState,
+                                    onAddExpenseClick = onAddExpenseClick,
+                                    onAddGroupClick = onAddGroupClick,
+                                    onExpenseClick = { onExpenseClick(it) },
+                                )
 
-                        1 -> Friends(uiState = uiState)
+                                1 -> Friends(uiState = uiState)
+                            }
+                        }
                     }
-                }
-                BottomBar(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(.1f),
-                    tabs = tabs,
-                    selectedTabIndex = selectedTabIndex,
-                    onItemClick = { selectedTabIndex = it }
-                )
-            } else {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    CircularProgressIndicator()
+                    BottomBar(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(.1f),
+                        tabs = tabs,
+                        selectedTabIndex = selectedTabIndex,
+                        onItemClick = { selectedTabIndex = it }
+                    )
+                } else {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
             }
         }
@@ -136,7 +158,7 @@ private fun BottomBar(
         modifier = modifier,
         verticalArrangement = Arrangement.SpaceAround
     ) {
-        Divider(thickness = 0.5.dp)
+        HorizontalDivider(thickness = 0.5.dp)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()

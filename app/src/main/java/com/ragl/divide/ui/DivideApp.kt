@@ -21,14 +21,12 @@ import com.ragl.divide.ui.screens.login.LoginScreen
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.expense.ExpenseScreen
 import com.ragl.divide.ui.screens.expenseDetails.ExpenseDetailsScreen
-import com.ragl.divide.ui.screens.expenseDetails.ExpenseDetailsViewModel
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun DivideApp(
     splashScreen: SplashScreen,
     userViewModel: UserViewModel = hiltViewModel(),
-    expenseDetailsViewModel: ExpenseDetailsViewModel = hiltViewModel(),
     navController: NavHostController = rememberNavController()
 ) {
     val isLoading by userViewModel.isLoading.collectAsState()
@@ -83,30 +81,28 @@ fun DivideApp(
             )
         }
         composable<Screen.AddExpense> {
+            val args: Screen.AddExpense = it.toRoute()
             ExpenseScreen(
                 onBackClick = { navController.popBackStack() },
-                onAddExpense = { navController.navTo(Screen.Home, true) },
+                expenseId = args.expenseId,
+                onAddExpense = {
+                    if (args.expenseId.isEmpty()) navController.navTo(
+                        Screen.Home,
+                        true
+                    ) else navController.navTo(
+                        Screen.ExpenseDetails(expenseId = args.expenseId),
+                        pop = true,
+                        incl = true
+                    )
+                },
             )
         }
         composable<Screen.ExpenseDetails> {
             val args: Screen.ExpenseDetails = it.toRoute()
             ExpenseDetailsScreen(
-                expenseState = expenseDetailsViewModel.expense,
-                isLoadingState = expenseDetailsViewModel.isLoading,
+                expenseId = args.expenseId,
                 editExpense = { id ->
                     navController.navTo(Screen.AddExpense(expenseId = id))
-                },
-                deleteExpense = { id, onSuccess, onFailure ->
-                    expenseDetailsViewModel.deleteExpense(id, onSuccess, onFailure)
-                },
-                deletePayment = { id, amount, onFailure ->
-                    expenseDetailsViewModel.deletePayment(id, amount, onFailure)
-                },
-                addPayment = { amount, onFailure ->
-                    expenseDetailsViewModel.addPayment(amount, onFailure)
-                },
-                loadExpense = {
-                    expenseDetailsViewModel.setExpense(args.expenseId)
                 },
                 onBackClick = { navController.popBackStack() },
                 onDeleteExpense = {
@@ -117,9 +113,9 @@ fun DivideApp(
     }
 }
 
-fun NavHostController.navTo(route: Screen, pop: Boolean = false) = navigate(route) {
+fun NavHostController.navTo(route: Screen, pop: Boolean = false, incl: Boolean = false) = navigate(route) {
     if (pop) popUpTo(route) {
-        inclusive = false
+        inclusive = incl
     }
 }
 

@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -29,6 +30,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
@@ -56,31 +58,27 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.core.text.isDigitsOnly
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.ui.screens.home.TitleRow
 import com.ragl.divide.ui.showToast
 import com.ragl.divide.ui.theme.AppTypography
-import kotlinx.coroutines.flow.StateFlow
 import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Date
 
 @Composable
 fun ExpenseDetailsScreen(
-    loadExpense: () -> Unit,
-    expenseState: StateFlow<Expense>,
-    isLoadingState: StateFlow<Boolean>,
+    expenseDetailsViewModel: ExpenseDetailsViewModel = hiltViewModel(),
+    expenseId: String,
     editExpense: (String) -> Unit,
-    deleteExpense: (String, () -> Unit, (String) -> Unit) -> Unit,
-    deletePayment: (String, Double, (String) -> Unit) -> Unit,
-    addPayment: (Long, (String) -> Unit) -> Unit,
     onBackClick: () -> Unit,
     onDeleteExpense: () -> Unit
 ) {
 
     LaunchedEffect(Unit) {
-        loadExpense()
+        expenseDetailsViewModel.setExpense(expenseId)
     }
 
     var isDeleteDialogVisible by remember { mutableStateOf(false) }
@@ -89,10 +87,9 @@ fun ExpenseDetailsScreen(
 
     var isPaymentDialogVisible by remember { mutableStateOf(false) }
 
-
     val context = LocalContext.current
-    val expense by expenseState.collectAsState()
-    val isLoading by isLoadingState.collectAsState()
+    val expense by expenseDetailsViewModel.expense.collectAsState()
+    val isLoading by expenseDetailsViewModel.isLoading.collectAsState()
 
     Scaffold(
         topBar = {
@@ -100,10 +97,13 @@ fun ExpenseDetailsScreen(
                 ExpenseDetailsAppBar(
                     expense = expense,
                     onBackClick = onBackClick,
+                    onEditClick = {
+                        editExpense(expenseId)
+                    },
                     onDeleteButtonClick = {
                         dialogMessage = R.string.delete_expense_confirm
                         onConfirmDeleteClick = {
-                            deleteExpense(
+                            expenseDetailsViewModel.deleteExpense(
                                 expense.id,
                                 {
                                     isDeleteDialogVisible = false
@@ -137,7 +137,7 @@ fun ExpenseDetailsScreen(
                         numberOfPayments = expense.numberOfPayments,
                         onDismissRequest = { isPaymentDialogVisible = false },
                         onConfirmClick = { amount ->
-                            addPayment(amount) { showToast(context, it) }
+                            expenseDetailsViewModel.addPayment(amount) { showToast(context, it) }
                             isPaymentDialogVisible = false
                         }
                     )
@@ -233,7 +233,7 @@ fun ExpenseDetailsScreen(
                                 IconButton(
                                     onClick = {
                                         onConfirmDeleteClick = {
-                                            deletePayment(
+                                            expenseDetailsViewModel.deletePayment(
                                                 it.key,
                                                 it.value.amount
                                             ) { showToast(context, it) }
@@ -272,6 +272,7 @@ fun ExpenseDetailsScreen(
 private fun ExpenseDetailsAppBar(
     expense: Expense,
     onBackClick: () -> Unit,
+    onEditClick: () -> Unit,
     onDeleteButtonClick: () -> Unit
 ) {
     CenterAlignedTopAppBar(
@@ -292,12 +293,12 @@ private fun ExpenseDetailsAppBar(
             IconButton(
                 onClick = onBackClick
             ) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
 
         },
         actions = {
-            IconButton(onClick = {}) {
+            IconButton(onClick = onEditClick) {
                 Icon(Icons.Filled.Edit, contentDescription = "Edit")
             }
             IconButton(onClick = onDeleteButtonClick) {
@@ -371,7 +372,7 @@ fun PaymentAlertDialog(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = stringResource(R.string.amount),
+                    text = stringResource(R.string.select_payment_or_custom),
                     style = AppTypography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -401,7 +402,7 @@ fun PaymentAlertDialog(
                         readOnly = false,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryMenuExpanded) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(MenuAnchorType.PrimaryEditable)
                             .clip(ShapeDefaults.Medium)
                     )
                     DropdownMenu(
@@ -413,20 +414,22 @@ fun PaymentAlertDialog(
                             .heightIn(max = 230.dp)
                     ) {
                         for (i in 1..numberOfPayments) {
-                            DropdownMenuItem(
-                                text = { Text(
-                                    stringResource(
-                                        R.string.payment,
-                                        NumberFormat.getCurrencyInstance().format(i * onePayment),
-                                        i,
-                                        if (i > 1) "s" else ""
-                                    )) },
-                                onClick = {
-                                    paymentAmount = (i * onePayment).toString()
-                                    categoryMenuExpanded = false
-                                },
-                                modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
-                            )
+                            val q = i * onePayment
+                            if(q <= remainingBalance)
+                                DropdownMenuItem(
+                                    text = { Text(
+                                        stringResource(
+                                            R.string.payment,
+                                            NumberFormat.getCurrencyInstance().format(q),
+                                            i,
+                                            if (i > 1) "s" else ""
+                                        )) },
+                                    onClick = {
+                                        paymentAmount = (q).toString()
+                                        categoryMenuExpanded = false
+                                    },
+                                    modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
+                                )
                         }
                     }
                 }

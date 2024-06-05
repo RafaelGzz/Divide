@@ -50,7 +50,7 @@ class ExpenseDetailsViewModel @Inject constructor(
     fun deletePayment(paymentId: String, amount: Double, onFailure: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                userRepository.deleteExpensePayment(paymentId, _expense.value.id)
+                userRepository.deleteExpensePayment(paymentId, amount, _expense.value.id)
                 _expense.update {
                     it.copy(
                         payments = userRepository.getExpensePayments(_expense.value.id),

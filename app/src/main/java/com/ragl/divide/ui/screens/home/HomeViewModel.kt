@@ -38,7 +38,7 @@ class HomeViewModel @Inject constructor(
         getUserData()
     }
 
-    private fun getUserData(){
+    fun getUserData(){
         viewModelScope.launch {
             _state.update {
                 it.copy(isLoading = true)
@@ -51,13 +51,15 @@ class HomeViewModel @Inject constructor(
                     it.copy(
                         expenses = expenses,
                         groups = groups,
-                        user = user,
-                        isLoading = false
+                        user = user
                     )
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e("HomeViewModel", e.message.toString())
+            }
+            _state.update {
+                it.copy(isLoading = false)
             }
         }
     }

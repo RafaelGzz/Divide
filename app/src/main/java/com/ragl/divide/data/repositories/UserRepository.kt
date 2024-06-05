@@ -34,7 +34,7 @@ interface UserRepository {
     suspend fun deleteExpense(id: String)
     suspend fun getExpensePayments(expenseId: String): Map<String, Payment>
     suspend fun saveExpensePayment(payment: Payment, expenseId: String)
-    suspend fun deleteExpensePayment(paymentId: String, expenseId: String)
+    suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String)
 }
 
 @Singleton
@@ -115,8 +115,10 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getExpense(id: String): Expense {
-        val expenses = getExpenses()
-        return expenses[id] ?: Expense()
+        val user = getFirebaseUser() ?: return Expense()
+        val expenseRef = database.getReference("users/${user.uid}/expenses/${id}")
+        val snapshot = expenseRef.get().await()
+        return snapshot.getValue(Expense::class.java) ?: Expense()
     }
 
     override suspend fun getExpenses(): Map<String, Expense> {
@@ -133,7 +135,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun saveExpense(expense: Expense) {
         val user = getFirebaseUser() ?: return
-        val id = "id${Date().time}"
+        val id = expense.id.ifEmpty { "id${Date().time}" }
         val expensesRef = database.getReference("users/${user.uid}/expenses")
         expensesRef.child(id).setValue(expense.copy(id = id)).await()
     }
@@ -161,8 +163,12 @@ class UserRepositoryImpl @Inject constructor(
         paymentsRef.child(id).setValue(payment.copy(id = id)).await()
     }
 
-    override suspend fun deleteExpensePayment(paymentId: String, expenseId: String) {
+    override suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String) {
         val user = getFirebaseUser() ?: return
+
+        val amountPaidRef = database.getReference("users/${user.uid}/expenses/$expenseId/amountPaid")
+        amountPaidRef.setValue(amountPaidRef.get().await().value as Long - amount).await()
+
         val paymentsRef = database.getReference("users/${user.uid}/expenses/$expenseId/payments")
         paymentsRef.child(paymentId).removeValue().await()
     }

@@ -62,4 +62,7 @@
     <string name="payment">%1$s (%2$s payment%3$s)</string>
     <string name="amount_must_be_less_than_remaining_balance">Amount must be less than remaining balance</string>
     <string name="required">Required</string>
+    <string name="select_payment_or_custom">Select a payment option or enter a custom amount</string>
+    <string name="update">Update</string>
+    <string name="update_expense">Update expense</string>
 </resources>
