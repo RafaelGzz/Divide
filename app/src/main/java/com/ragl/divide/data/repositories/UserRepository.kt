@@ -34,7 +34,7 @@ interface UserRepository {
     suspend fun saveExpense(expense: Expense)
     suspend fun deleteExpense(id: String)
     suspend fun getExpensePayments(expenseId: String): Map<String, Payment>
-    suspend fun saveExpensePayment(payment: Payment, expenseId: String)
+    suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean)
     suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String)
 }
 
@@ -153,21 +153,24 @@ class UserRepositoryImpl @Inject constructor(
         return payments
     }
 
-    override suspend fun saveExpensePayment(payment: Payment, expenseId: String) {
+    override suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean) {
         val user = getFirebaseUser() ?: return
         val id = "id${Date().time}"
 
         val amountPaidRef =
             database.getReference("users/${user.uid}/expenses/$expenseId/amountPaid")
         val amountPaid = try {
-            (amountPaidRef.get().await().value) as Double
+            (amountPaidRef.get().await().value) as Double + payment.amount
         } catch (e: Exception) {
-            0.0
+            (amountPaidRef.get().await().value) as Long + payment.amount
         }
-        amountPaidRef.setValue(amountPaid + payment.amount).await()
+        amountPaidRef.setValue(amountPaid).await()
 
         val paymentsRef = database.getReference("users/${user.uid}/expenses/$expenseId/payments")
         paymentsRef.child(id).setValue(payment.copy(id = id)).await()
+
+        if(expensePaid)
+            database.getReference("users/${user.uid}/expenses/$expenseId/paid").setValue(true).await()
     }
 
     override suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String) {

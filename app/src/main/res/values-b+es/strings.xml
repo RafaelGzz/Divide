@@ -65,4 +65,6 @@
     <string name="update">Actualizar</string>
     <string name="update_expense">Actualizar gasto</string>
     <string name="amount_must_be_greater_than_0">Cantidad debe ser mayor que 0</string>
+    <string name="congratulations">Felicidades</string>
+    <string name="you_have_paid_your_expense_completely">Haz pagado tu gasto completamente!</string>
 </resources>

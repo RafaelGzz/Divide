@@ -9,7 +9,9 @@ sealed class Screen(val route: String) {
     @Serializable
     data object Login : Screen("Login")
     @Serializable
-    data object Home : Screen("Home")
+    data class Home(
+        val paidExpense: Boolean = false
+    ) : Screen("Home")
     @Serializable
     data object AddGroup : Screen("AddGroup")
     @Serializable
@@ -24,7 +26,7 @@ sealed class Screen(val route: String) {
     companion object{
         fun stringToScreen(route: String) : Screen = when(route){
             Login.route -> Login
-            Home.route -> Home
+            Home().route -> Home()
             else -> Login
         }
     }

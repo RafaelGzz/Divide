@@ -22,7 +22,8 @@ data class Expense(
     val frequency: Frequency = Frequency.DAILY,
     val addedDate: Long = Date().time,
     val startingDate: Long = Date().time,
-    val payments: Map<String, Payment> = emptyMap()
+    val payments: Map<String, Payment> = emptyMap(),
+    val paid: Boolean = false,
 //    val method: Method = Method.EQUALLY,
 //    val paidBy: List<String> = emptyList(),
 //    val debtors: List<String> = emptyList(),

@@ -50,9 +50,11 @@ import com.ragl.divide.data.models.Expense
 import com.ragl.divide.ui.screens.home.TitleRow
 import com.ragl.divide.ui.screens.login.DivideTextField
 import com.ragl.divide.ui.showToast
+import java.math.RoundingMode
 import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Date
+import kotlin.math.exp
 
 @Composable
 fun ExpenseDetailsScreen(
@@ -60,7 +62,8 @@ fun ExpenseDetailsScreen(
     expenseId: String,
     editExpense: (String) -> Unit,
     onBackClick: () -> Unit,
-    onDeleteExpense: () -> Unit
+    onDeleteExpense: () -> Unit,
+    onPaidExpense: () -> Unit
 ) {
 
     LaunchedEffect(Unit) {
@@ -118,10 +121,15 @@ fun ExpenseDetailsScreen(
                 }
                 if (isPaymentDialogVisible) {
                     PaymentAlertDialog(
-                        remainingBalance = expense.amount - expense.amountPaid,
+                        remainingBalance = (expense.amount - expense.amountPaid).toBigDecimal()
+                            .setScale(2, RoundingMode.HALF_EVEN).toDouble(),
                         onDismissRequest = { isPaymentDialogVisible = false },
                         onConfirmClick = { amount ->
-                            expenseDetailsViewModel.addPayment(amount) { showToast(context, it) }
+                            expenseDetailsViewModel.addPayment(
+                                amount = amount,
+                                onFailure = { showToast(context, it) },
+                                onPaidExpense = { onPaidExpense() }
+                            )
                             isPaymentDialogVisible = false
                         }
                     )

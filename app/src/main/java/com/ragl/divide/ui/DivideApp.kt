@@ -45,24 +45,25 @@ fun DivideApp(
                 onGoogleButtonClick = {
                     userViewModel.signInWithGoogle(
                         context,
-                        { navController.navTo(Screen.Home, true) },
+                        { navController.navTo(Screen.Home(), true) },
                         { showToast(context, it) }
                     )
                 },
                 onLoginButtonClick = { email, password ->
                     userViewModel.signInWithEmailAndPassword(email, password,
-                        { navController.navTo(Screen.Home, true) },
+                        { navController.navTo(Screen.Home(), true) },
                         { showToast(context, it) })
                 },
                 onSignUpButtonClick = { email, password, name ->
                     userViewModel.signUpWithEmailAndPassword(email, password, name,
-                        { navController.navTo(Screen.Home, true) },
+                        { navController.navTo(Screen.Home(), true) },
                         { showToast(context, it) })
                 },
                 isLoading = isLoading
             )
         }
         composable<Screen.Home> {
+            val args: Screen.Home = it.toRoute()
             HomeScreen(
                 onAddExpenseClick = {
                     navController.navTo(
@@ -78,6 +79,7 @@ fun DivideApp(
                     navController.navTo(Screen.ExpenseDetails(expenseId = it))
                 },
                 onSignOut = { navController.navTo(Screen.Login, true) },
+                paidExpense = args.paidExpense
             )
         }
         composable<Screen.AddExpense> {
@@ -87,7 +89,7 @@ fun DivideApp(
                 expenseId = args.expenseId,
                 onAddExpense = {
                     if (args.expenseId.isEmpty()) navController.navTo(
-                        Screen.Home,
+                        Screen.Home(),
                         true
                     ) else navController.navTo(
                         Screen.ExpenseDetails(expenseId = args.expenseId),
@@ -106,7 +108,10 @@ fun DivideApp(
                 },
                 onBackClick = { navController.popBackStack() },
                 onDeleteExpense = {
-                    navController.navTo(Screen.Home, true)
+                    navController.navTo(Screen.Home(), true)
+                },
+                onPaidExpense = {
+                    navController.navTo(Screen.Home(true), true)
                 }
             )
         }
