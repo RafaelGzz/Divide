@@ -1,42 +1,31 @@
 package com.ragl.divide.ui.screens.expenseDetails
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -56,14 +44,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
-import androidx.core.text.isDigitsOnly
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.ui.screens.home.TitleRow
+import com.ragl.divide.ui.screens.login.DivideTextField
 import com.ragl.divide.ui.showToast
-import com.ragl.divide.ui.theme.AppTypography
 import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Date
@@ -132,9 +118,7 @@ fun ExpenseDetailsScreen(
                 }
                 if (isPaymentDialogVisible) {
                     PaymentAlertDialog(
-                        amount = expense.amount,
-                        amountPaid = expense.amountPaid,
-                        numberOfPayments = expense.numberOfPayments,
+                        remainingBalance = expense.amount - expense.amountPaid,
                         onDismissRequest = { isPaymentDialogVisible = false },
                         onConfirmClick = { amount ->
                             expenseDetailsViewModel.addPayment(amount) { showToast(context, it) }
@@ -149,7 +133,8 @@ fun ExpenseDetailsScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    text = stringResource(R.string.s_paid,
+                    text = stringResource(
+                        R.string.s_paid,
                         NumberFormat.getCurrencyInstance().format(expense.amountPaid)
                     ),
                     textAlign = TextAlign.Center,
@@ -221,7 +206,11 @@ fun ExpenseDetailsScreen(
                                     style = MaterialTheme.typography.labelLarge
                                 )
                             },
-                            headlineContent = { Text(NumberFormat.getCurrencyInstance().format(it.value.amount)) },
+                            headlineContent = {
+                                Text(
+                                    NumberFormat.getCurrencyInstance().format(it.value.amount)
+                                )
+                            },
                             supportingContent = {
                                 Text(
                                     DateFormat.getDateInstance(DateFormat.LONG)
@@ -338,24 +327,17 @@ fun DeleteAlertDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentAlertDialog(
     onDismissRequest: () -> Unit,
-    onConfirmClick: (Long) -> Unit,
-    amountPaid: Double,
-    amount: Double,
-    numberOfPayments: Int,
+    onConfirmClick: (Double) -> Unit,
+    remainingBalance: Double
 ) {
-    val onePayment = amount / numberOfPayments
-    val remainingBalance = amount - amountPaid
 
     var paymentAmount by remember { mutableStateOf("") }
     var paymentAmountError by remember { mutableStateOf("") }
 
-    var categoryMenuExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
-//    var custom by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -368,89 +350,50 @@ fun PaymentAlertDialog(
         text = {
             Column {
                 Text(
-                    text = stringResource(R.string.remaining_balance, NumberFormat.getCurrencyInstance().format(amount - amountPaid)),
-                    style = MaterialTheme.typography.bodyMedium
+                    text = stringResource(
+                        R.string.remaining_balance,
+                        NumberFormat.getCurrencyInstance().format(remainingBalance)
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
-                Text(
-                    text = stringResource(R.string.select_payment_or_custom),
-                    style = AppTypography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-                ExposedDropdownMenuBox(
-                    expanded = categoryMenuExpanded,
-                    onExpandedChange = { categoryMenuExpanded = !categoryMenuExpanded },
-                ) {
-                    TextField(
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                        ),
-                        value = paymentAmount,
-                        onValueChange = { if (it.isDigitsOnly()) paymentAmount = it },
-                        singleLine = true,
-                        prefix = {
-                                 Text(text = "$")
-                        },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Go,
-                            autoCorrectEnabled = false
-                        ),
-                        readOnly = false,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryMenuExpanded) },
-                        modifier = Modifier
-                            .menuAnchor(MenuAnchorType.PrimaryEditable)
-                            .clip(ShapeDefaults.Medium)
-                    )
-                    DropdownMenu(
-                        expanded = categoryMenuExpanded,
-                        onDismissRequest = { categoryMenuExpanded = false },
-                        properties = PopupProperties(focusable = false),
-                        modifier = Modifier
-                            .background(color = MaterialTheme.colorScheme.primaryContainer)
-                            .heightIn(max = 230.dp)
-                    ) {
-                        for (i in 1..numberOfPayments) {
-                            val q = i * onePayment
-                            if(q <= remainingBalance)
-                                DropdownMenuItem(
-                                    text = { Text(
-                                        stringResource(
-                                            R.string.payment,
-                                            NumberFormat.getCurrencyInstance().format(q),
-                                            i,
-                                            if (i > 1) "s" else ""
-                                        )) },
-                                    onClick = {
-                                        paymentAmount = (q).toString()
-                                        categoryMenuExpanded = false
-                                    },
-                                    modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
-                                )
+                DivideTextField(
+                    label = stringResource(R.string.amount),
+                    input = paymentAmount,
+                    error = paymentAmountError,
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Go,
+                    errorText = paymentAmountError != "",
+                    prefix = {
+                        Text(text = "$")
+                    },
+                    onValueChange = { input ->
+                        if (input.isEmpty()) paymentAmount = "" else {
+                            val formatted = input.replace(",", ".")
+                            val parsed = formatted.toDoubleOrNull()
+                            parsed?.let {
+                                val decimalPart = formatted.substringAfter(".", "")
+                                if (decimalPart.length <= 2) {
+                                    paymentAmount = input
+                                }
+                            }
                         }
                     }
-                }
-                if (paymentAmountError != "")
-                    Text(
-                        text = paymentAmountError,
-                        color = MaterialTheme.colorScheme.error,
-                        style = AppTypography.labelSmall,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
+                )
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                if (paymentAmount.isNotEmpty() && paymentAmount.toDouble().toLong() > 0) {
-                    if (paymentAmount.toDouble().toLong() <= remainingBalance)
-                        onConfirmClick(paymentAmount.toDouble().toLong())
-                    else paymentAmountError =
-                        context.getString(R.string.amount_must_be_less_than_remaining_balance)
-                } else paymentAmountError = context.getString(R.string.required)
-            }) {
+            TextButton(
+                onClick = {
+                    if (paymentAmount.isNotEmpty() && paymentAmount.toDouble() > 0) {
+                        if (paymentAmount.toDouble() <= remainingBalance)
+                            onConfirmClick(paymentAmount.toDouble())
+                        else paymentAmountError =
+                            context.getString(R.string.amount_must_be_less_than_remaining_balance)
+                    } else paymentAmountError =
+                        context.getString(R.string.amount_must_be_greater_than_0)
+                }
+            ) {
                 Text(text = stringResource(R.string.ok))
             }
         },
