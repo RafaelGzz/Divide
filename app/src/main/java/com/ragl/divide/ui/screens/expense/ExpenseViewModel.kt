@@ -133,6 +133,7 @@ class ExpenseViewModel @Inject constructor(
                             category = category,
                             reminders = reminders,
                             numberOfPayments = payments.toInt(),
+                            payments = if (id.isNotEmpty()) userRepository.getExpensePayments(id) else emptyMap(),
                             notes = notes,
                             frequency = frequency,
                             startingDate = startingDate

@@ -63,11 +63,11 @@ class ExpenseDetailsViewModel @Inject constructor(
         }
     }
 
-    fun addPayment(amount: Long, onFailure: (String) -> Unit) {
+    fun addPayment(amount: Double, onFailure: (String) -> Unit) {
         viewModelScope.launch {
             try {
                 userRepository.saveExpensePayment(
-                    Payment(amount = amount.toDouble()),
+                    Payment(amount = amount),
                     expenseId = _expense.value.id
                 )
                 _expense.update {

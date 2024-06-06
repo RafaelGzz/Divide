@@ -1,5 +1,6 @@
 package com.ragl.divide.data.repositories
 
+import android.util.Log
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -156,8 +157,14 @@ class UserRepositoryImpl @Inject constructor(
         val user = getFirebaseUser() ?: return
         val id = "id${Date().time}"
 
-        val amountPaidRef = database.getReference("users/${user.uid}/expenses/$expenseId/amountPaid")
-        amountPaidRef.setValue(amountPaidRef.get().await().value as Long + payment.amount).await()
+        val amountPaidRef =
+            database.getReference("users/${user.uid}/expenses/$expenseId/amountPaid")
+        val amountPaid = try {
+            (amountPaidRef.get().await().value) as Double
+        } catch (e: Exception) {
+            0.0
+        }
+        amountPaidRef.setValue(amountPaid + payment.amount).await()
 
         val paymentsRef = database.getReference("users/${user.uid}/expenses/$expenseId/payments")
         paymentsRef.child(id).setValue(payment.copy(id = id)).await()
@@ -167,7 +174,7 @@ class UserRepositoryImpl @Inject constructor(
         val user = getFirebaseUser() ?: return
 
         val amountPaidRef = database.getReference("users/${user.uid}/expenses/$expenseId/amountPaid")
-        amountPaidRef.setValue(amountPaidRef.get().await().value as Long - amount).await()
+        amountPaidRef.setValue(amountPaidRef.get().await().value as Double - amount).await()
 
         val paymentsRef = database.getReference("users/${user.uid}/expenses/$expenseId/payments")
         paymentsRef.child(paymentId).removeValue().await()

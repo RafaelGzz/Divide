@@ -206,11 +206,22 @@ fun ExpenseScreen(
                 ) {
                     DivideTextField(
                         label = stringResource(R.string.amount),
-                        keyboardType = KeyboardType.NumberPassword,
+                        keyboardType = KeyboardType.Number,
                         prefix = { Text(text = "$", style = AppTypography.titleMedium) },
                         input = vm.amount,
                         error = vm.amountError,
-                        onValueChange = { if (it.isDigitsOnly()) vm.updateAmount(it) },
+                        onValueChange = {input->
+                            if(input.isEmpty()) vm.updateAmount("") else {
+                                val formatted = input.replace(",", ".")
+                                val parsed = formatted.toDoubleOrNull()
+                                parsed?.let {
+                                    val decimalPart = formatted.substringAfter(".", "")
+                                    if (decimalPart.length <= 2) {
+                                        vm.updateAmount(input)
+                                    }
+                                }
+                            }
+                        },
                         modifier = Modifier.weight(.55f)
                     )
                     DivideTextField(
