@@ -1,6 +1,7 @@
 package com.ragl.divide.ui.screens.home
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -111,7 +113,10 @@ fun HomeScreen(
                             },
                             text = {
                                 Text(stringResource(R.string.you_have_paid_your_expense_completely))
-                            }
+                            },
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                            titleContentColor = MaterialTheme.colorScheme.primary,
+                            textContentColor = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     TopBar(
@@ -271,7 +276,7 @@ private fun Home(
             onAddClick = onAddGroupClick
         )
         GroupsRow(
-            groups = uiState.groups, modifier = Modifier
+            groups = uiState.groups.values.toList().sortedBy { it.id }, modifier = Modifier
                 .fillMaxHeight()
                 .padding(horizontal = 16.dp)
         )
@@ -404,24 +409,35 @@ private fun GroupsRow(modifier: Modifier = Modifier, groups: List<Group>) {
             modifier = modifier,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(groups, key = { it.id }) {
+            items(groups, key = { it.id }) { group ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(ShapeDefaults.Medium)
                         .background(MaterialTheme.colorScheme.primaryContainer)
-                        .clickable { },
+                        .clickable { /* Handle click action */ },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(it.image).crossfade(true).build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(100.dp),
-                    )
+                    if (group.image.isNotEmpty()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(group.image)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(100.dp),
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(100.dp).background(MaterialTheme.colorScheme.primary)
+                        )
+                    }
                     Text(
-                        text = it.name,
+                        text = group.name,
                         style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
                         modifier = Modifier.padding(16.dp)
                     )

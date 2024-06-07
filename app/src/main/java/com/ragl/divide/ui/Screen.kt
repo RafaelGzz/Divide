@@ -13,7 +13,9 @@ sealed class Screen(val route: String) {
         val paidExpense: Boolean = false
     ) : Screen("Home")
     @Serializable
-    data object AddGroup : Screen("AddGroup")
+    data class AddGroup(
+        val groupId: String = ""
+    ) : Screen("AddGroup")
     @Serializable
     data class AddExpense(
         val expenseId: String = ""

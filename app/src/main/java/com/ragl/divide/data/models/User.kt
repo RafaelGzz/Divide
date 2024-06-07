@@ -5,6 +5,6 @@ data class User(
     val email: String = "",
     val name: String = "",
     val photoUrl: String = "",
-    val groups: List<String> = emptyList(),
+    val groups: Map<String, String> = emptyMap(),
     val expenses: Map<String, Expense> = emptyMap()
 )

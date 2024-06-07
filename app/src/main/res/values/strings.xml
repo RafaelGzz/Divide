@@ -67,4 +67,7 @@
     <string name="amount_must_be_greater_than_0">Amount must be greater than 0</string>
     <string name="congratulations">Congratulations</string>
     <string name="you_have_paid_your_expense_completely">You have paid your expense completely!</string>
+    <string name="add_group">Add Group</string>
+    <string name="update_group">Update Group</string>
+    <string name="name">Name</string>
 </resources>

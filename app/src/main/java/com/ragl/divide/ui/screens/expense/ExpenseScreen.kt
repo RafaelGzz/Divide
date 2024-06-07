@@ -210,13 +210,13 @@ fun ExpenseScreen(
                         prefix = { Text(text = "$", style = AppTypography.titleMedium) },
                         input = vm.amount,
                         error = vm.amountError,
-                        onValueChange = {input->
-                            if(input.isEmpty()) vm.updateAmount("") else {
+                        onValueChange = { input ->
+                            if (input.isEmpty()) vm.updateAmount("") else {
                                 val formatted = input.replace(",", ".")
                                 val parsed = formatted.toDoubleOrNull()
                                 parsed?.let {
                                     val decimalPart = formatted.substringAfter(".", "")
-                                    if (decimalPart.length <= 2) {
+                                    if (decimalPart.length <= 2 && parsed <= 999999999.99) {
                                         vm.updateAmount(input)
                                     }
                                 }

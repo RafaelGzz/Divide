@@ -20,7 +20,7 @@ import javax.inject.Inject
 data class HomeUiState(
     val isLoading: Boolean = false,
     val expenses: Map<String, Expense> = emptyMap(),
-    val groups: List<Group> = emptyList(),
+    val groups: Map<String, Group> = emptyMap(),
     val user: User = User()
 )
 

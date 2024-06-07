@@ -21,6 +21,7 @@ import com.ragl.divide.ui.screens.login.LoginScreen
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.expense.ExpenseScreen
 import com.ragl.divide.ui.screens.expenseDetails.ExpenseDetailsScreen
+import com.ragl.divide.ui.screens.group.GroupScreen
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -72,7 +73,7 @@ fun DivideApp(
                 },
                 onAddGroupClick = {
                     navController.navTo(
-                        Screen.AddGroup
+                        Screen.AddGroup()
                     )
                 },
                 onExpenseClick = {
@@ -115,14 +116,24 @@ fun DivideApp(
                 }
             )
         }
+        composable<Screen.AddGroup> {
+            val args: Screen.AddGroup = it.toRoute()
+            GroupScreen(
+                groupId = args.groupId,
+                onBackClick = { navController.popBackStack() },
+                onAddGroup = {
+                    navController.navTo(Screen.Home(), true)
+                })
+        }
     }
 }
 
-fun NavHostController.navTo(route: Screen, pop: Boolean = false, incl: Boolean = false) = navigate(route) {
-    if (pop) popUpTo(route) {
-        inclusive = incl
+fun NavHostController.navTo(route: Screen, pop: Boolean = false, incl: Boolean = false) =
+    navigate(route) {
+        if (pop) popUpTo(route) {
+            inclusive = incl
+        }
     }
-}
 
 
 fun showToast(context: Context, message: String) =

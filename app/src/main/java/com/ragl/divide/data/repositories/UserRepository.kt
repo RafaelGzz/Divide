@@ -36,6 +36,7 @@ interface UserRepository {
     suspend fun getExpensePayments(expenseId: String): Map<String, Payment>
     suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean)
     suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String)
+    suspend fun saveGroup(id: String)
 }
 
 @Singleton
@@ -187,5 +188,11 @@ class UserRepositoryImpl @Inject constructor(
         val user = getFirebaseUser() ?: return
         val expensesRef = database.getReference("users/${user.uid}/expenses")
         expensesRef.child(id).removeValue().await()
+    }
+
+    override suspend fun saveGroup(id: String){
+        val user = getFirebaseUser() ?: return
+        val groupRef = database.getReference("users/${user.uid}/groups")
+        groupRef.child(id).setValue(id).await()
     }
 }

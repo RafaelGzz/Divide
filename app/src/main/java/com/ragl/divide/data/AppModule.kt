@@ -13,6 +13,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.database
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.storage
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.GroupRepositoryImpl
 import com.ragl.divide.data.repositories.PreferencesRepository
@@ -44,6 +46,10 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideFirebaseStorage(): FirebaseStorage = Firebase.storage
+
+    @Provides
+    @Singleton
     fun providePreferencesDatastore(@ApplicationContext context: Context): DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler(produceNewData = { emptyPreferences() }),
@@ -69,7 +75,9 @@ object AppModule {
     @Provides
     @Singleton
     fun providesGroupRepository(
-        firebaseDatabase: FirebaseDatabase
-    ): GroupRepository = GroupRepositoryImpl(firebaseDatabase)
+        firebaseDatabase: FirebaseDatabase,
+        firebaseStorage: FirebaseStorage,
+        userRepository: UserRepository
+    ): GroupRepository = GroupRepositoryImpl(firebaseDatabase, firebaseStorage, userRepository)
 
 }

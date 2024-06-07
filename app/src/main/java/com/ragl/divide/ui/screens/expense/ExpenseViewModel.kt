@@ -153,7 +153,7 @@ class ExpenseViewModel @Inject constructor(
                 val expense = userRepository.getExpense(expenseId)
                 id = expense.id
                 title = expense.title
-                amount = expense.amount.toString()
+                amount = expense.amount.toBigDecimal().toPlainString()
                 category = expense.category
                 reminders = expense.reminders
                 payments = expense.numberOfPayments.toString()

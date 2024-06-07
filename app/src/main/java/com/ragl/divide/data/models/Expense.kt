@@ -2,14 +2,6 @@ package com.ragl.divide.data.models
 
 import java.util.Date
 
-data class Group(
-    val id: String = "",
-    val name: String = "",
-    val image: String = "",
-    val expenses: Map<String, Expense> = emptyMap(),
-    val users: List<String> = emptyList()
-)
-
 data class Expense(
     val id: String = "",
     val title: String = "",
@@ -28,16 +20,3 @@ data class Expense(
 //    val paidBy: List<String> = emptyList(),
 //    val debtors: List<String> = emptyList(),
 )
-
-data class Payment(
-    val id: String = "",
-    val amount: Double = 0.0,
-    val date: Long = Date().time,
-    val paidBy: String = ""
-)
-
-enum class Method {
-    EQUALLY,
-    PERCENTAGES,
-    CUSTOM
-}

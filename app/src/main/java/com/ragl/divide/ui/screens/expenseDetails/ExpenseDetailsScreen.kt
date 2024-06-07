@@ -381,7 +381,7 @@ fun PaymentAlertDialog(
                             val parsed = formatted.toDoubleOrNull()
                             parsed?.let {
                                 val decimalPart = formatted.substringAfter(".", "")
-                                if (decimalPart.length <= 2) {
+                                if (decimalPart.length <= 2 && parsed <= 999999999.99) {
                                     paymentAmount = input
                                 }
                             }

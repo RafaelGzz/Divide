@@ -5,6 +5,7 @@ coreSplashscreen = "1.2.0-alpha01"
 credentialsPlayServicesAuth = "1.2.2"
 datastorePreferences = "1.1.1"
 firebaseBom = "33.1.0"
+firebaseStorage = "21.0.0"
 googleid = "1.1.0"
 hiltAndroid = "2.51.1"
 hiltAndroidCompiler = "2.51.1"
@@ -37,6 +38,7 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
+firebase-storage = { module = "com.google.firebase:firebase-storage", version.ref = "firebaseStorage" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroidCompiler" }
