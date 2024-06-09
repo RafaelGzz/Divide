@@ -22,6 +22,7 @@ import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.expense.ExpenseScreen
 import com.ragl.divide.ui.screens.expenseDetails.ExpenseDetailsScreen
 import com.ragl.divide.ui.screens.group.GroupScreen
+import com.ragl.divide.ui.screens.groupDetails.GroupDetailsScreen
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -76,8 +77,11 @@ fun DivideApp(
                         Screen.AddGroup()
                     )
                 },
-                onExpenseClick = {
-                    navController.navTo(Screen.ExpenseDetails(expenseId = it))
+                onExpenseClick = { expenseId ->
+                    navController.navTo(Screen.ExpenseDetails(expenseId = expenseId))
+                },
+                onGroupClick = { groupId ->
+                    navController.navTo(Screen.GroupDetails(groupId = groupId))
                 },
                 onSignOut = { navController.navTo(Screen.Login, true) },
                 paidExpense = args.paidExpense
@@ -123,7 +127,21 @@ fun DivideApp(
                 onBackClick = { navController.popBackStack() },
                 onAddGroup = {
                     navController.navTo(Screen.Home(), true)
-                })
+                }
+            )
+        }
+        composable<Screen.GroupDetails> {
+            val args: Screen.GroupDetails = it.toRoute()
+            GroupDetailsScreen(
+                groupId = args.groupId,
+                editGroup = { id ->
+                    navController.navTo(Screen.AddGroup(groupId = id))
+                },
+                onBackClick = { navController.popBackStack() },
+                onAddExpense = {
+                    //navController.navTo(Screen.AddExpense(groupId = it))
+                }
+            )
         }
     }
 }

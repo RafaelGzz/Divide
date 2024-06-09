@@ -70,4 +70,6 @@
     <string name="add_group">Añadir Grupo</string>
     <string name="update_group">Actualizar Grupo</string>
     <string name="name">Nombre</string>
+    <string name="group_expenses">Gastos grupales</string>
+    <string name="group_no_expenses">No hay gastos</string>
 </resources>

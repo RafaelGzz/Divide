@@ -12,6 +12,8 @@ interface GroupRepository {
     suspend fun getGroup(id: String): Group
     suspend fun saveGroup(group: Group, photoUri: Uri?)
     suspend fun uploadPhoto(photoUri: Uri, id: String): String
+    suspend fun addUser(groupId: String, userId: String)
+    suspend fun leaveGroup(groupId: String)
 }
 
 class GroupRepositoryImpl(
@@ -34,10 +36,12 @@ class GroupRepositoryImpl(
 
     override suspend fun saveGroup(group: Group, photoUri: Uri?) {
         val id = group.id.ifEmpty { "id${Date().time}" }
+        val uid = userRepository.getFirebaseUser()!!.uid
         database.getReference("groups/$id").setValue(
             group.copy(
                 image = if (photoUri != null) uploadPhoto(photoUri, id) else "",
-                id = id
+                id = id,
+                users = group.users.apply { set(uid, uid) }
             )
         ).await()
         userRepository.saveGroup(id)
@@ -47,5 +51,16 @@ class GroupRepositoryImpl(
         val photoRef = storage.getReference("groupPhotos/$id.jpg")
         photoRef.putFile(photoUri).await()
         return photoRef.downloadUrl.await().toString()
+    }
+
+    override suspend fun addUser(groupId: String, userId: String) {
+        val groupRef = database.getReference("groups/$groupId/users")
+        groupRef.child(userId).setValue(userId).await()
+    }
+
+    override suspend fun leaveGroup(groupId: String) {
+        val user = userRepository.getFirebaseUser() ?: return
+        val groupRef = database.getReference("groups/$groupId/users")
+        groupRef.child(user.uid).removeValue().await()
     }
 }

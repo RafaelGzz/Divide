@@ -3,11 +3,9 @@ package com.ragl.divide.ui.screens.group
 import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.repositories.GroupRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,15 +45,15 @@ class GroupViewModel @Inject constructor(
         selectedImageUri = image
     }
 
-    fun addUser(user: String) {
+    fun addUser(userId: String) {
         _state.update {
-            it.copy(users = it.users + user)
+            it.copy(users = it.users.apply { set(userId, userId) })
         }
     }
 
-    fun removeUser(user: String) {
+    fun removeUser(userId: String) {
         _state.update {
-            it.copy(users = it.users - user)
+            it.copy(users = it.users.apply { remove(userId) })
         }
     }
 

@@ -70,4 +70,6 @@
     <string name="add_group">Add Group</string>
     <string name="update_group">Update Group</string>
     <string name="name">Name</string>
+    <string name="group_expenses">Group expenses</string>
+    <string name="group_no_expenses">There are no expenses</string>
 </resources>

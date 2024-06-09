@@ -3,6 +3,7 @@ package com.ragl.divide.ui.screens.home
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -77,6 +79,7 @@ fun HomeScreen(
     onAddGroupClick: () -> Unit,
     onSignOut: () -> Unit,
     onExpenseClick: (String) -> Unit,
+    onGroupClick: (String) -> Unit,
     paidExpense: Boolean = false
 ) {
     val uiState by vm.state.collectAsState()
@@ -146,7 +149,8 @@ fun HomeScreen(
                                     uiState = uiState,
                                     onAddExpenseClick = onAddExpenseClick,
                                     onAddGroupClick = onAddGroupClick,
-                                    onExpenseClick = { onExpenseClick(it) },
+                                    onExpenseClick = onExpenseClick,
+                                    onGroupClick = onGroupClick,
                                 )
 
                                 1 -> Friends(uiState = uiState)
@@ -250,7 +254,8 @@ private fun Home(
     uiState: HomeUiState,
     onAddExpenseClick: () -> Unit,
     onAddGroupClick: () -> Unit,
-    onExpenseClick: (String) -> Unit
+    onExpenseClick: (String) -> Unit,
+    onGroupClick: (String) -> Unit
 ) {
     Column(modifier) {
         TitleRow(
@@ -276,7 +281,9 @@ private fun Home(
             onAddClick = onAddGroupClick
         )
         GroupsRow(
-            groups = uiState.groups.values.toList().sortedBy { it.id }, modifier = Modifier
+            groups = uiState.groups.values.toList().sortedBy { it.id },
+            onGroupClick = { onGroupClick(it) },
+            modifier = Modifier
                 .fillMaxHeight()
                 .padding(horizontal = 16.dp)
         )
@@ -398,7 +405,11 @@ private fun ExpensesRow(
 }
 
 @Composable
-private fun GroupsRow(modifier: Modifier = Modifier, groups: List<Group>) {
+private fun GroupsRow(
+    modifier: Modifier = Modifier,
+    groups: List<Group>,
+    onGroupClick: (String) -> Unit
+) {
     if (groups.isEmpty()) Text(
         text = stringResource(R.string.you_have_no_groups),
         style = AppTypography.labelSmall,
@@ -415,7 +426,7 @@ private fun GroupsRow(modifier: Modifier = Modifier, groups: List<Group>) {
                         .fillMaxWidth()
                         .clip(ShapeDefaults.Medium)
                         .background(MaterialTheme.colorScheme.primaryContainer)
-                        .clickable { /* Handle click action */ },
+                        .clickable { onGroupClick(group.id) },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (group.image.isNotEmpty()) {
@@ -433,7 +444,9 @@ private fun GroupsRow(modifier: Modifier = Modifier, groups: List<Group>) {
                             painter = painterResource(id = R.drawable.ic_launcher_foreground),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(100.dp).background(MaterialTheme.colorScheme.primary)
+                            modifier = Modifier
+                                .size(100.dp)
+                                .background(MaterialTheme.colorScheme.primary)
                         )
                     }
                     Text(
@@ -469,6 +482,7 @@ private fun TopBar(
                     contentDescription = null,
                     modifier = Modifier
                         .clip(CircleShape)
+                        .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
                         .size(70.dp)
                         .clickable { onTapUserImage() }
                 )
@@ -477,8 +491,10 @@ private fun TopBar(
                     Icons.Filled.Person,
                     contentDescription = null,
                     modifier = Modifier
+                        .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        .size(70.dp)
+                        .padding(12.dp)
                         .clip(CircleShape)
-                        .size(32.dp)
                         .clickable { onTapUserImage() }
                 )
             }
