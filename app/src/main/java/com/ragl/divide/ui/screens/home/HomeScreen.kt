@@ -50,12 +50,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -69,6 +69,7 @@ import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.theme.AppTypography
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,88 +94,84 @@ fun HomeScreen(
     var paidExpenseDialogVisible by remember { mutableStateOf(paidExpense) }
 
     Scaffold { paddingValues ->
-        Box(
+        Column(
             modifier = modifier
-                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(top = 20.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .padding(top = 20.dp)
-            ) {
-                if (!uiState.isLoading) {
-                    if (paidExpenseDialogVisible) {
-                        AlertDialog(
-                            onDismissRequest = { paidExpenseDialogVisible = false },
-                            confirmButton = {
-                                TextButton(onClick = { paidExpenseDialogVisible = false }) {
-                                    Text(text = "OK")
-                                }
-                            },
-                            title = {
-                                Text(stringResource(R.string.congratulations))
-                            },
-                            text = {
-                                Text(stringResource(R.string.you_have_paid_your_expense_completely))
-                            },
-                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                            titleContentColor = MaterialTheme.colorScheme.primary,
-                            textContentColor = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    TopBar(
-                        user = uiState.user,
-                        onTapUserImage = { vm.signOut { onSignOut() } },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp)
-                            .weight(.1f)
-                    )
-                    Box(modifier = Modifier.weight(.8f)) {
-                        PullToRefreshBox(
-                            isRefreshing = uiState.isLoading,
-                            state = pullToRefreshState,
-                            indicator = {
-                                Indicator(
-                                    modifier = Modifier.align(Alignment.TopCenter),
-                                    state = pullToRefreshState,
-                                    isRefreshing = uiState.isLoading,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                                )
-                            },
-                            onRefresh = { vm.getUserData() }) {
-                            when (selectedTabIndex) {
-                                0 -> Home(
-                                    uiState = uiState,
-                                    onAddExpenseClick = onAddExpenseClick,
-                                    onAddGroupClick = onAddGroupClick,
-                                    onExpenseClick = onExpenseClick,
-                                    onGroupClick = onGroupClick,
-                                )
-
-                                1 -> Friends(uiState = uiState)
+            if (!uiState.isLoading) {
+                if (paidExpenseDialogVisible) {
+                    AlertDialog(
+                        onDismissRequest = { paidExpenseDialogVisible = false },
+                        confirmButton = {
+                            TextButton(onClick = { paidExpenseDialogVisible = false }) {
+                                Text(text = "OK")
                             }
+                        },
+                        title = {
+                            Text(stringResource(R.string.congratulations))
+                        },
+                        text = {
+                            Text(stringResource(R.string.you_have_paid_your_expense_completely))
+                        },
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                        textContentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                TopBar(
+                    user = uiState.user,
+                    onTapUserImage = { vm.signOut { onSignOut() } },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp)
+                        .weight(.1f)
+                )
+                Box(modifier = Modifier.weight(.8f)) {
+                    PullToRefreshBox(
+                        isRefreshing = uiState.isLoading,
+                        state = pullToRefreshState,
+                        indicator = {
+                            Indicator(
+                                modifier = Modifier.align(Alignment.TopCenter),
+                                state = pullToRefreshState,
+                                isRefreshing = uiState.isLoading,
+                                color = MaterialTheme.colorScheme.primary,
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        },
+                        onRefresh = { vm.getUserData() }) {
+                        when (selectedTabIndex) {
+                            0 -> Home(
+                                uiState = uiState,
+                                onAddExpenseClick = onAddExpenseClick,
+                                onAddGroupClick = onAddGroupClick,
+                                onExpenseClick = onExpenseClick,
+                                onGroupClick = onGroupClick,
+                            )
+
+                            1 -> Friends(uiState = uiState)
                         }
                     }
-                    BottomBar(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .weight(.1f),
-                        tabs = tabs,
-                        selectedTabIndex = selectedTabIndex,
-                        onItemClick = { selectedTabIndex = it }
-                    )
-                } else {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                }
+                BottomBar(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(.1f),
+                    tabs = tabs,
+                    selectedTabIndex = selectedTabIndex,
+                    onItemClick = { selectedTabIndex = it }
+                )
+            } else {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    CircularProgressIndicator()
                 }
             }
         }
+
     }
 }
 
@@ -226,7 +223,7 @@ private fun BottomBarItem(
     selected: Boolean = false,
     @StringRes labelStringResource: Int,
     icon: ImageVector,
-    onItemClick: () -> Unit = {}
+    onItemClick: () -> Unit
 ) {
     Box(modifier = modifier.clickable { onItemClick() }) {
         Column(
@@ -243,7 +240,7 @@ private fun BottomBarItem(
                     .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 16.dp, vertical = 4.dp)
             )
-            //Text(text = stringResource(labelStringResource), fontSize = 14.sp)
+            Text(text = stringResource(labelStringResource), fontSize = 14.sp)
         }
     }
 }
@@ -275,12 +272,12 @@ private fun Home(
         TitleRow(
             labelStringResource = R.string.your_groups,
             buttonStringResource = R.string.add,
+            onAddClick = onAddGroupClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 20.dp, horizontal = 16.dp),
-            onAddClick = onAddGroupClick
+                .padding(vertical = 20.dp, horizontal = 16.dp)
         )
-        GroupsRow(
+        GroupsColumn(
             groups = uiState.groups.values.toList().sortedBy { it.id },
             onGroupClick = { onGroupClick(it) },
             modifier = Modifier
@@ -304,7 +301,7 @@ fun TitleRow(
     ) {
         Text(
             text = stringResource(labelStringResource),
-            style = AppTypography.titleMedium
+            style = MaterialTheme.typography.titleMedium
         )
         Box(modifier = Modifier
             .clip(ShapeDefaults.Small)
@@ -313,12 +310,9 @@ fun TitleRow(
             .clickable { onAddClick() }) {
             Text(
                 text = stringResource(buttonStringResource),
-                textAlign = TextAlign.Center,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = AppTypography.titleMedium,
+                style = MaterialTheme.typography.titleSmall.copy(color = MaterialTheme.colorScheme.onPrimary),
                 modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
             )
         }
     }
@@ -361,7 +355,7 @@ private fun ExpensesRow(
                     )
                     Text(
                         text = it.title,
-                        style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
+                        style = AppTypography.titleMedium.copy(color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Normal),
                         softWrap = true,
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 1,
@@ -405,7 +399,7 @@ private fun ExpensesRow(
 }
 
 @Composable
-private fun GroupsRow(
+private fun GroupsColumn(
     modifier: Modifier = Modifier,
     groups: List<Group>,
     onGroupClick: (String) -> Unit
@@ -502,15 +496,18 @@ private fun TopBar(
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
             Text(
                 text = user.name,
-                style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary)
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
             )
             Text(
                 text = stringResource(R.string.owed, owed),
-                style = AppTypography.labelSmall
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal)
             )
             Text(
                 text = stringResource(R.string.you_owe, owe),
-                style = AppTypography.labelSmall
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal)
             )
         }
     }

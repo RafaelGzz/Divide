@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
@@ -52,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -60,8 +62,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.Frequency
-import com.ragl.divide.ui.screens.login.DivideTextField
 import com.ragl.divide.ui.theme.AppTypography
+import com.ragl.divide.ui.utils.DivideTextField
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,7 +93,12 @@ fun ExpenseScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(stringResource(if (expenseId.isEmpty()) R.string.add_expense else R.string.update_expense)) },
+                title = {
+                    Text(
+                        stringResource(if (expenseId.isEmpty()) R.string.add_expense else R.string.update_expense),
+                        style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary)
+                    )
+                },
                 navigationIcon = {
                     IconButton(
                         onClick = onBackClick
@@ -118,7 +125,7 @@ fun ExpenseScreen(
             ) {
                 Text(
                     text = stringResource(if (expenseId.isEmpty()) R.string.add else R.string.update),
-                    style = AppTypography.titleMedium
+                    style = MaterialTheme.typography.bodyLarge
                 )
             }
 
@@ -158,7 +165,7 @@ fun ExpenseScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.category),
-                            style = AppTypography.labelSmall,
+                            style = AppTypography.labelSmall.copy(fontWeight = FontWeight.Normal),
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -189,7 +196,7 @@ fun ExpenseScreen(
                                     .clip(CircleShape)
                             ) {
                                 Category.entries.forEach {
-                                    DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
+                                    DropdownMenuItem(text = { Text(text = it.name, style = MaterialTheme.typography.bodyMedium) }, onClick = {
                                         vm.updateCategory(it)
                                         categoryMenuExpanded = false
                                     },
@@ -207,7 +214,7 @@ fun ExpenseScreen(
                     DivideTextField(
                         label = stringResource(R.string.amount),
                         keyboardType = KeyboardType.Number,
-                        prefix = { Text(text = "$", style = AppTypography.titleMedium) },
+                        prefix = { Text(text = "$", style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer)) },
                         input = vm.amount,
                         error = vm.amountError,
                         onValueChange = { input ->
@@ -232,7 +239,7 @@ fun ExpenseScreen(
                         suffix = {
                             Text(
                                 stringResource(paymentSuffix),
-                                style = AppTypography.titleMedium
+                                style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer)
                             )
                         },
                         onValueChange = { if (it.isDigitsOnly()) vm.updatePayments(it) },
@@ -261,11 +268,12 @@ fun ExpenseScreen(
                 ) {
                     Checkbox(
                         checked = vm.reminders,
-                        onCheckedChange = { vm.updateReminders(it) }
+                        onCheckedChange = { vm.updateReminders(it) },
+                        colors = CheckboxDefaults.colors(uncheckedColor = MaterialTheme.colorScheme.primary)
                     )
                     Text(
                         text = stringResource(R.string.get_reminders),
-                        style = AppTypography.labelSmall,
+                        style = AppTypography.labelSmall.copy(fontWeight = FontWeight.Normal),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(end = 8.dp)
                     )
@@ -282,7 +290,7 @@ fun ExpenseScreen(
                         ) {
                             Text(
                                 text = stringResource(R.string.frequency),
-                                style = AppTypography.labelSmall,
+                                style = AppTypography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
@@ -319,7 +327,7 @@ fun ExpenseScreen(
                                 ) {
                                     Frequency.entries.forEach {
                                         DropdownMenuItem(
-                                            text = { Text(stringResource(it.resId)) },
+                                            text = { Text(stringResource(it.resId), style = MaterialTheme.typography.bodyMedium) },
                                             onClick = {
                                                 vm.updateFrequency(it)
                                                 frequencyMenuExpanded = false
@@ -335,7 +343,7 @@ fun ExpenseScreen(
                         ) {
                             Text(
                                 text = stringResource(R.string.starting_from),
-                                style = AppTypography.labelSmall,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
@@ -348,7 +356,7 @@ fun ExpenseScreen(
                             ) {
                                 Text(
                                     text = stringResource(R.string.select_date),
-                                    style = AppTypography.titleMedium
+                                    style = MaterialTheme.typography.bodyLarge
                                 )
                             }
                         }

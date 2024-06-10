@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,8 +49,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.ui.screens.home.TitleRow
-import com.ragl.divide.ui.screens.login.DivideTextField
 import com.ragl.divide.ui.showToast
+import com.ragl.divide.ui.utils.DivideTextField
 import java.math.RoundingMode
 import java.text.DateFormat
 import java.text.NumberFormat
@@ -137,18 +138,18 @@ fun ExpenseDetailsScreen(
                 Text(
                     text = NumberFormat.getCurrencyInstance().format(expense.amount),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.headlineLarge,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Text(
-                    text = stringResource(
-                        R.string.s_paid,
-                        NumberFormat.getCurrencyInstance().format(expense.amountPaid)
-                    ),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.fillMaxWidth()
-                )
+//                Text(
+//                    text = stringResource(
+//                        R.string.s_paid,
+//                        NumberFormat.getCurrencyInstance().format(expense.amountPaid)
+//                    ),
+//                    textAlign = TextAlign.Center,
+//                    style = MaterialTheme.typography.labelMedium,
+//                    modifier = Modifier.fillMaxWidth()
+//                )
 //                if (expense.numberOfPayments > 1)
 //                    Text(
 //                        text = stringResource(R.string.s_payments, expense.numberOfPayments),
@@ -162,8 +163,10 @@ fun ExpenseDetailsScreen(
                         DateFormat.getDateInstance(DateFormat.LONG).format(Date(expense.addedDate))
                     ),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.fillMaxWidth()
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
                 )
                 if (expense.notes != "") {
                     Text(
@@ -199,7 +202,7 @@ fun ExpenseDetailsScreen(
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 12.dp)
+                                    .padding(vertical = 20.dp)
                             )
                         }
                     }
@@ -211,7 +214,7 @@ fun ExpenseDetailsScreen(
                             leadingContent = {
                                 Text(
                                     stringResource(R.string.paid),
-                                    style = MaterialTheme.typography.labelLarge
+                                    style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurface)
                                 )
                             },
                             headlineContent = {
@@ -252,6 +255,28 @@ fun ExpenseDetailsScreen(
                                 .clip(ShapeDefaults.Medium)
                         )
                     }
+                    if (expense.payments.isNotEmpty())
+                        item {
+                            ListItem(
+                                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                                leadingContent = {
+                                    Text(
+                                        stringResource(R.string.total),
+                                        style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurface)
+                                    )
+                                },
+                                headlineContent = {
+                                    Text(
+                                        NumberFormat.getCurrencyInstance()
+                                            .format(expense.amountPaid),
+                                        modifier = Modifier.padding(vertical = 16.dp)
+                                    )
+                                },
+                                modifier = Modifier
+                                    .padding(vertical = 4.dp)
+                                    .clip(ShapeDefaults.Medium)
+                            )
+                        }
                 }
             }
         else
@@ -279,12 +304,16 @@ private fun ExpenseDetailsAppBar(
                 softWrap = true,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
                     .padding(top = 4.dp)
             )
         },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            titleContentColor = MaterialTheme.colorScheme.primary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+            actionIconContentColor = MaterialTheme.colorScheme.onSurface
+        ),
         navigationIcon = {
 
             IconButton(

@@ -38,8 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.ragl.divide.R
-import com.ragl.divide.ui.screens.login.DivideTextField
 import com.ragl.divide.ui.theme.AppTypography
+import com.ragl.divide.ui.utils.DivideTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
