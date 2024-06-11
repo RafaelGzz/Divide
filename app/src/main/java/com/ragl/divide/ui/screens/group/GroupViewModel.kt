@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Group
@@ -23,7 +24,7 @@ class GroupViewModel @Inject constructor(
     private var _state = MutableStateFlow(Group())
     var state = _state.asStateFlow()
 
-    var selectedImageUri by mutableStateOf<Uri?>(null)
+    var selectedImageUri by mutableStateOf<Uri>(Uri.EMPTY)
         private set
     var nameError by mutableStateOf("")
         private set
@@ -32,8 +33,8 @@ class GroupViewModel @Inject constructor(
     var usersError by mutableStateOf("")
         private set
 
-    var isLoading by mutableStateOf(true)
-        private set
+    private var _isLoading = MutableStateFlow(false)
+    var isLoading = _isLoading.asStateFlow()
 
     fun updateName(name: String) {
         _state.update {
@@ -41,10 +42,9 @@ class GroupViewModel @Inject constructor(
         }
     }
 
-    fun updateImage(image: Uri?) {
+    fun updateImage(image: Uri) {
         selectedImageUri = image
     }
-
     fun addUser(userId: String) {
         _state.update {
             it.copy(users = it.users.apply { set(userId, userId) })
@@ -59,11 +59,11 @@ class GroupViewModel @Inject constructor(
 
     fun setGroup(id: String) {
         viewModelScope.launch {
-            isLoading = true
+            _isLoading.update { true }
             _state.update {
                 groupRepository.getGroup(id)
             }
-            isLoading = false
+            _isLoading.update { false }
         }
     }
 
@@ -99,10 +99,12 @@ class GroupViewModel @Inject constructor(
         if (validateName()) {
             viewModelScope.launch {
                 try {
+                    _isLoading.update { true }
                     groupRepository.saveGroup(
                         _state.value,
                         selectedImageUri
                     )
+                    _isLoading.update { false }
                     onSuccess()
                 } catch (e: Exception) {
                     onError(e.message ?: "Unknown error")

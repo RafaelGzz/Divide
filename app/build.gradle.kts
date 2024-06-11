@@ -55,7 +55,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.10"
     }
     packaging {
         resources {
@@ -92,6 +92,7 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.firebase.storage)
 
+    // Credentials
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
@@ -102,10 +103,13 @@ dependencies {
     kapt(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
+    // Coil
     implementation(libs.coil.compose)
 
+    // Splash Screen
     implementation(libs.androidx.core.splashscreen)
 
+    // DataStore
     implementation(libs.androidx.datastore.preferences)
 
     testImplementation(libs.junit)

@@ -10,8 +10,9 @@ import java.util.Date
 interface GroupRepository {
     suspend fun getGroups(groupIds: Map<String, String>): Map<String, Group>
     suspend fun getGroup(id: String): Group
-    suspend fun saveGroup(group: Group, photoUri: Uri?)
+    suspend fun saveGroup(group: Group, photoUri: Uri)
     suspend fun uploadPhoto(photoUri: Uri, id: String): String
+    suspend fun getPhoto(id: String): String
     suspend fun addUser(groupId: String, userId: String)
     suspend fun leaveGroup(groupId: String)
 }
@@ -30,16 +31,17 @@ class GroupRepositoryImpl(
     }
 
     override suspend fun getGroup(id: String): Group {
-        return database.getReference("groups/$id").get().await().getValue(Group::class.java)
+        val group = database.getReference("groups/$id").get().await().getValue(Group::class.java)
             ?: Group()
+        return group.copy(image = getPhoto(id))
     }
 
-    override suspend fun saveGroup(group: Group, photoUri: Uri?) {
+    override suspend fun saveGroup(group: Group, photoUri: Uri) {
         val id = group.id.ifEmpty { "id${Date().time}" }
         val uid = userRepository.getFirebaseUser()!!.uid
         database.getReference("groups/$id").setValue(
             group.copy(
-                image = if (photoUri != null) uploadPhoto(photoUri, id) else "",
+                image = if (photoUri != Uri.EMPTY) uploadPhoto(photoUri, id) else group.image,
                 id = id,
                 users = group.users.apply { set(uid, uid) }
             )
@@ -51,6 +53,11 @@ class GroupRepositoryImpl(
         val photoRef = storage.getReference("groupPhotos/$id.jpg")
         photoRef.putFile(photoUri).await()
         return photoRef.downloadUrl.await().toString()
+    }
+
+    override suspend fun getPhoto(id: String): String {
+        val storageRef = storage.getReference("groupPhotos/$id.jpg")
+        return storageRef.downloadUrl.await().toString()
     }
 
     override suspend fun addUser(groupId: String, userId: String) {
