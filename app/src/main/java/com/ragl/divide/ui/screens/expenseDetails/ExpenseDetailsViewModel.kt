@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.expenseDetails
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Expense
@@ -42,6 +43,7 @@ class ExpenseDetailsViewModel @Inject constructor(
                 userRepository.deleteExpense(id)
                 onSuccess()
             } catch (e: Exception) {
+                Log.e("ExpenseDetailsViewModel", e.message, e)
                 onFailure(e.message ?: "Something went wrong")
             }
         }
@@ -58,6 +60,7 @@ class ExpenseDetailsViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
+                Log.e("ExpenseDetailsViewModel", e.message, e)
                 onFailure(e.message ?: "Something went wrong")
             }
         }
@@ -80,6 +83,7 @@ class ExpenseDetailsViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
+                Log.e("ExpenseDetailsViewModel", e.message, e)
                 onFailure(e.message ?: "Something went wrong")
             }
         }

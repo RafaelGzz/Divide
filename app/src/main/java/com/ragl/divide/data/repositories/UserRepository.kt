@@ -178,7 +178,12 @@ class UserRepositoryImpl @Inject constructor(
         val user = getFirebaseUser() ?: return
 
         val amountPaidRef = database.getReference("users/${user.uid}/expenses/$expenseId/amountPaid")
-        amountPaidRef.setValue(amountPaidRef.get().await().value as Double - amount).await()
+        val amountPaid = try {
+            (amountPaidRef.get().await().value) as Double - amount
+        } catch (e: Exception) {
+            (amountPaidRef.get().await().value) as Long - amount
+        }
+        amountPaidRef.setValue(amountPaid).await()
 
         val paymentsRef = database.getReference("users/${user.uid}/expenses/$expenseId/payments")
         paymentsRef.child(paymentId).removeValue().await()

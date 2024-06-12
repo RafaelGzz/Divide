@@ -13,10 +13,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -100,7 +102,19 @@ fun HomeScreen(
 
     var paidExpenseDialogVisible by remember { mutableStateOf(paidExpense) }
 
-    Scaffold { paddingValues ->
+    val context = LocalContext.current
+
+    Scaffold(
+        bottomBar = {
+            BottomBar(
+                tabs = tabs,
+                selectedTabIndex = selectedTabIndex,
+                onItemClick = {
+                    selectedTabIndex = it
+                }
+            )
+        }
+    ) { paddingValues ->
         Column(
             modifier = modifier
                 .padding(paddingValues)
@@ -120,7 +134,7 @@ fun HomeScreen(
                         text = {
                             Text(stringResource(R.string.you_have_paid_your_expense_completely))
                         },
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.99f),
                         titleContentColor = MaterialTheme.colorScheme.primary,
                         textContentColor = MaterialTheme.colorScheme.onSurface
                     )
@@ -163,14 +177,6 @@ fun HomeScreen(
                         }
                     }
                 }
-                BottomBar(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(.1f),
-                    tabs = tabs,
-                    selectedTabIndex = selectedTabIndex,
-                    onItemClick = { selectedTabIndex = it }
-                )
             } else {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -191,14 +197,17 @@ private fun BottomBar(
     selectedTabIndex: Int,
     onItemClick: (Int) -> Unit
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.SpaceAround
-    ) {
-        HorizontalDivider(thickness = 0.5.dp)
+//    Column(
+//        modifier = modifier.navigationBarsPadding(),
+//        verticalArrangement = Arrangement.SpaceAround
+//    ) {
+//        HorizontalDivider(thickness = 0.5.dp)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .height(80.dp)
         ) {
             tabs.forEachIndexed { index, pair ->
                 BottomBarItem(
@@ -210,7 +219,7 @@ private fun BottomBar(
                 )
             }
         }
-    }
+//    }
 }
 
 @Composable
@@ -249,7 +258,7 @@ private fun BottomBarItem(
                     .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 16.dp, vertical = 4.dp)
             )
-            Text(text = stringResource(labelStringResource), fontSize = 14.sp)
+            //Text(text = stringResource(labelStringResource), fontSize = 14.sp)
         }
     }
 }

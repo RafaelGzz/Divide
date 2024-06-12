@@ -31,6 +31,7 @@
     <string name="divided_in">Divided in</string>
     <string name="payments">payment</string>
     <string name="payments_plural">payments</string>
+    <string name="once">Once</string>
     <string name="daily">Daily</string>
     <string name="weekly">Weekly</string>
     <string name="biweekly">Biweekly</string>
@@ -73,4 +74,6 @@
     <string name="group_expenses">Group expenses</string>
     <string name="group_no_expenses">There are no expenses</string>
     <string name="total">Total</string>
+    <string name="reminder_permission_title">Reminder permission</string>
+    <string name="reminder_permission_message">In order to enable reminders for your expenses, you need to enable the permission on your device. Please select Divide from the app list and enable it.</string>
 </resources>

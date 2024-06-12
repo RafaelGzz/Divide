@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.expense
 
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,7 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
@@ -62,6 +63,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.Frequency
+import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.theme.AppTypography
 import com.ragl.divide.ui.utils.DivideTextField
 import java.util.Date
@@ -83,9 +85,13 @@ fun ExpenseScreen(
     var frequencyMenuExpanded by remember { mutableStateOf(false) }
     var paymentSuffix by remember { mutableIntStateOf(R.string.payments) }
 
-    var showDialog by remember { mutableStateOf(false) }
+    var reminderPermissionMessageDialogEnabled by remember { mutableStateOf(false) }
+
+    var selectDateDialogEnabled by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+
+    val scheduleNotificationService = ScheduleNotificationService(context)
 
     LaunchedEffect(vm.payments) {
         paymentSuffix = if (vm.payments == "1") R.string.payments else R.string.payments_plural
@@ -111,11 +117,15 @@ fun ExpenseScreen(
         bottomBar = {
             Button(
                 onClick = {
-                    vm.saveExpense(onSuccess = { onAddExpense() }, onError = {
-                        Toast.makeText(
-                            context, it, Toast.LENGTH_SHORT
-                        ).show()
-                    })
+                    vm.saveExpense(
+                        scheduleNotificationService = scheduleNotificationService,
+                        onSuccess = { onAddExpense() },
+                        onError = {
+                            Toast.makeText(
+                                context, it, Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    )
                 },
                 shape = ShapeDefaults.Medium,
                 modifier = Modifier
@@ -137,11 +147,44 @@ fun ExpenseScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            if (showDialog) {
+            if (selectDateDialogEnabled) {
                 FrequencyStartingDatePicker(
                     time = vm.startingDate,
-                    onDismissRequest = { showDialog = false },
+                    onDismissRequest = { selectDateDialogEnabled = false },
                     onConfirmClick = { vm.updateStartingDate(it) }
+                )
+            }
+            if (reminderPermissionMessageDialogEnabled) {
+                AlertDialog(
+                    onDismissRequest = { reminderPermissionMessageDialogEnabled = false },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                reminderPermissionMessageDialogEnabled = false
+                                scheduleNotificationService.requestScheduleExactAlarmPermission()
+                            }
+                        ) { Text(stringResource(R.string.ok)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { reminderPermissionMessageDialogEnabled = false }) {
+                            Text(stringResource(id = R.string.cancel))
+                        }
+                    },
+                    title = {
+                        Text(
+                            text = stringResource(R.string.reminder_permission_title),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = stringResource(R.string.reminder_permission_message),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
             Column(
@@ -196,7 +239,12 @@ fun ExpenseScreen(
                                     .clip(CircleShape)
                             ) {
                                 Category.entries.forEach {
-                                    DropdownMenuItem(text = { Text(text = it.name, style = MaterialTheme.typography.bodyMedium) }, onClick = {
+                                    DropdownMenuItem(text = {
+                                        Text(
+                                            text = it.name,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }, onClick = {
                                         vm.updateCategory(it)
                                         categoryMenuExpanded = false
                                     },
@@ -214,9 +262,10 @@ fun ExpenseScreen(
                     DivideTextField(
                         label = stringResource(R.string.amount),
                         keyboardType = KeyboardType.Number,
-                        prefix = { Text(text = "$", style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer)) },
+                        prefix = { Text(text = "$", style = AppTypography.bodyLarge) },
                         input = vm.amount,
                         error = vm.amountError,
+                        enabled = vm.amountPaid == 0.0,
                         onValueChange = { input ->
                             if (input.isEmpty()) vm.updateAmount("") else {
                                 val formatted = input.replace(",", ".")
@@ -261,14 +310,20 @@ fun ExpenseScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .padding(top = 16.dp)
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) { vm.updateReminders(!vm.reminders) }
                 ) {
                     Checkbox(
-                        checked = vm.reminders,
-                        onCheckedChange = { vm.updateReminders(it) },
+                        checked = vm.isRemindersEnabled,
+                        onCheckedChange = {
+                            if (it) {
+                                if (!scheduleNotificationService.canScheduleExactAlarms()) {
+                                    reminderPermissionMessageDialogEnabled = true
+                                } else {
+                                    vm.updateIsRemindersEnabled(true)
+                                }
+                            } else {
+                                vm.updateIsRemindersEnabled(false)
+                            }
+                        },
                         colors = CheckboxDefaults.colors(uncheckedColor = MaterialTheme.colorScheme.primary)
                     )
                     Text(
@@ -278,7 +333,7 @@ fun ExpenseScreen(
                         modifier = Modifier.padding(end = 8.dp)
                     )
                 }
-                if (vm.reminders) {
+                if (vm.isRemindersEnabled) {
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -327,7 +382,12 @@ fun ExpenseScreen(
                                 ) {
                                     Frequency.entries.forEach {
                                         DropdownMenuItem(
-                                            text = { Text(stringResource(it.resId), style = MaterialTheme.typography.bodyMedium) },
+                                            text = {
+                                                Text(
+                                                    stringResource(it.resId),
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                            },
                                             onClick = {
                                                 vm.updateFrequency(it)
                                                 frequencyMenuExpanded = false
@@ -348,7 +408,7 @@ fun ExpenseScreen(
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                             Button(
-                                onClick = { showDialog = true },
+                                onClick = { selectDateDialogEnabled = true },
                                 shape = ShapeDefaults.Medium,
                                 modifier = Modifier
                                     .fillMaxWidth()

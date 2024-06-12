@@ -2,6 +2,7 @@ package com.ragl.divide.ui.screens.expense
 
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -12,6 +13,7 @@ import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.data.repositories.UserRepository
+import com.ragl.divide.data.services.ScheduleNotificationService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.util.Date
@@ -22,6 +24,8 @@ class ExpenseViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
     private var id = ""
+    var amountPaid by mutableDoubleStateOf(0.0)
+        private set
     var title by mutableStateOf("")
         private set
     var titleError by mutableStateOf("")
@@ -38,7 +42,7 @@ class ExpenseViewModel @Inject constructor(
         private set
     var notes by mutableStateOf("")
         private set
-    var reminders by mutableStateOf(false)
+    var isRemindersEnabled by mutableStateOf(false)
         private set
     var frequency by mutableStateOf(Frequency.DAILY)
         private set
@@ -109,8 +113,8 @@ class ExpenseViewModel @Inject constructor(
         }
     }
 
-    fun updateReminders(reminders: Boolean) {
-        this.reminders = reminders
+    fun updateIsRemindersEnabled(isRemindersEnabled: Boolean) {
+        this.isRemindersEnabled = isRemindersEnabled
     }
 
     fun updateFrequency(frequency: Frequency) {
@@ -121,7 +125,11 @@ class ExpenseViewModel @Inject constructor(
         this.startingDate = startingDate
     }
 
-    fun saveExpense(onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun saveExpense(
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+        scheduleNotificationService: ScheduleNotificationService
+    ) {
         if (validateTitle() && validateAmount() && validatePayments()) {
             viewModelScope.launch {
                 try {
@@ -131,7 +139,7 @@ class ExpenseViewModel @Inject constructor(
                             title = title,
                             amount = amount.toDouble(),
                             category = category,
-                            reminders = reminders,
+                            reminders = isRemindersEnabled,
                             numberOfPayments = payments.toInt(),
                             payments = if (id.isNotEmpty()) userRepository.getExpensePayments(id) else emptyMap(),
                             notes = notes,
@@ -139,8 +147,20 @@ class ExpenseViewModel @Inject constructor(
                             startingDate = startingDate
                         )
                     )
+                    if (isRemindersEnabled)
+                        scheduleNotificationService.scheduleNotification(
+                            id = startingDate.toInt(),
+                            title = "Expense - $title",
+                            content = "This is your reminder to pay $amount for $title",
+                            startingDate,
+                            frequency
+                        )
+                    else {
+                        scheduleNotificationService.cancelNotification(startingDate.toInt())
+                    }
                     onSuccess()
                 } catch (e: Exception) {
+                    Log.e("ExpenseViewModel", e.message, e)
                     onError(e.message ?: "Unknown error")
                 }
             }
@@ -155,11 +175,12 @@ class ExpenseViewModel @Inject constructor(
                 title = expense.title
                 amount = expense.amount.toBigDecimal().toPlainString()
                 category = expense.category
-                reminders = expense.reminders
+                isRemindersEnabled = expense.reminders
                 payments = expense.numberOfPayments.toString()
                 notes = expense.notes
                 frequency = expense.frequency
                 startingDate = expense.startingDate
+                amountPaid = expense.amountPaid
             } catch (e: Exception) {
                 Log.e("ExpenseViewModel", "Error fetching expense: ${e.message}")
             }

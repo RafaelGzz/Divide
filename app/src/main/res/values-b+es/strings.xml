@@ -31,6 +31,7 @@
     <string name="divided_in">Dividido en</string>
     <string name="payments">pago</string>
     <string name="payments_plural">pagos</string>
+    <string name="once">Una vez</string>
     <string name="daily">Diario</string>
     <string name="weekly">Semanal</string>
     <string name="biweekly">Quincenal</string>
@@ -73,4 +74,6 @@
     <string name="group_expenses">Gastos grupales</string>
     <string name="group_no_expenses">No hay gastos</string>
     <string name="total">Total</string>
+    <string name="reminder_permission_title">Permiso de recordatorios</string>
+    <string name="reminder_permission_message">Para habilitar recordatorios en sus gastos, debe habilitar el permiso en su dispositivo. Seleccione Divide en la lista de aplicaciones y habilítelo.</string>
 </resources>

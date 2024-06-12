@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.groupDetails
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Group
@@ -53,6 +54,7 @@ class GroupDetailsViewModel @Inject constructor(
             try{
                 groupRepository.leaveGroup(_group.value.id)
             }catch (e: Exception){
+                Log.e("GroupDetailsViewModel", e.message, e)
                 onError(e.message ?: "An error occurred")
             }
         }

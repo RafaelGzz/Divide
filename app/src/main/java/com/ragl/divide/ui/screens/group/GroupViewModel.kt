@@ -1,10 +1,10 @@
 package com.ragl.divide.ui.screens.group
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Group
@@ -107,6 +107,7 @@ class GroupViewModel @Inject constructor(
                     _isLoading.update { false }
                     onSuccess()
                 } catch (e: Exception) {
+                    Log.e("GroupViewModel", e.message, e)
                     onError(e.message ?: "Unknown error")
                 }
             }
