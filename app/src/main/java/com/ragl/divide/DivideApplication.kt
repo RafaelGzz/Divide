@@ -11,7 +11,7 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import coil.util.DebugLogger
-import com.ragl.divide.data.services.ReminderNotificationReceiver
+import com.ragl.divide.data.services.Notifications
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -48,7 +48,7 @@ class DivideApplication : Application(), ImageLoaderFactory {
             val descriptionText = "These notifications remind you of payments to expenses."
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(
-                ReminderNotificationReceiver.CHANNEL_ID,
+                Notifications.CHANNEL_ID,
                 name,
                 importance
             ).apply {

@@ -1,10 +1,6 @@
 package com.ragl.divide.ui.screens.expense
 
-import android.os.Build
-import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,6 +60,7 @@ import com.ragl.divide.R
 import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.data.services.ScheduleNotificationService
+import com.ragl.divide.ui.showToast
 import com.ragl.divide.ui.theme.AppTypography
 import com.ragl.divide.ui.utils.DivideTextField
 import java.util.Date
@@ -74,7 +71,7 @@ fun ExpenseScreen(
     vm: ExpenseViewModel = hiltViewModel(),
     expenseId: String,
     onBackClick: () -> Unit,
-    onAddExpense: () -> Unit
+    onSaveExpense: () -> Unit
 ) {
 
     LaunchedEffect(Unit) {
@@ -119,11 +116,9 @@ fun ExpenseScreen(
                 onClick = {
                     vm.saveExpense(
                         scheduleNotificationService = scheduleNotificationService,
-                        onSuccess = { onAddExpense() },
+                        onSuccess = { onSaveExpense() },
                         onError = {
-                            Toast.makeText(
-                                context, it, Toast.LENGTH_SHORT
-                            ).show()
+                            showToast(context, it)
                         }
                     )
                 },

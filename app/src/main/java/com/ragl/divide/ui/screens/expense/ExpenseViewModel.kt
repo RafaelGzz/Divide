@@ -72,17 +72,23 @@ class ExpenseViewModel @Inject constructor(
     }
 
     private fun validateAmount(): Boolean {
-        return when (amount.trim()) {
-            "" -> {
-                this.amountError = "Amount is required"
-                false
-            }
-
-            else -> {
-                this.amountError = ""
-                true
-            }
+        if (amount.isEmpty()) {
+            this.amountError = "Amount is required"
+            return false
         }
+
+        val amountDouble = amount.toDoubleOrNull() ?: run {
+            this.amountError = "Invalid amount"
+            return false
+        }
+
+        if (amountDouble <= 0) {
+            this.amountError = "Amount must be greater than 0"
+            return false
+        }
+
+        this.amountError = ""
+        return true
     }
 
     fun updateCategory(category: Category) {

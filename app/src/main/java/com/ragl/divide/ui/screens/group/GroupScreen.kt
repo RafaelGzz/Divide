@@ -3,7 +3,6 @@ package com.ragl.divide.ui.screens.group
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -50,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ragl.divide.R
+import com.ragl.divide.ui.showToast
 import com.ragl.divide.ui.theme.AppTypography
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.createImageFile
@@ -118,9 +118,7 @@ fun GroupScreen(
                 Button(
                     onClick = {
                         vm.saveGroup(onSuccess = { onAddGroup() }, onError = {
-                            Toast.makeText(
-                                context, it, Toast.LENGTH_SHORT
-                            ).show()
+                            showToast(context, it)
                         })
                     },
                     shape = ShapeDefaults.Medium,

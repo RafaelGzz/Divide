@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -33,7 +32,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -63,7 +62,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -101,8 +99,6 @@ fun HomeScreen(
     }
 
     var paidExpenseDialogVisible by remember { mutableStateOf(paidExpense) }
-
-    val context = LocalContext.current
 
     Scaffold(
         bottomBar = {
@@ -202,35 +198,47 @@ private fun BottomBar(
 //        verticalArrangement = Arrangement.SpaceAround
 //    ) {
 //        HorizontalDivider(thickness = 0.5.dp)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .height(80.dp)
-        ) {
-            tabs.forEachIndexed { index, pair ->
-                BottomBarItem(
-                    labelStringResource = pair.first,
-                    icon = pair.second,
-                    selected = selectedTabIndex == index,
-                    onItemClick = { onItemClick(index) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .height(80.dp)
+    ) {
+        tabs.forEachIndexed { index, pair ->
+            BottomBarItem(
+                labelStringResource = pair.first,
+                icon = pair.second,
+                selected = selectedTabIndex == index,
+                onItemClick = { onItemClick(index) },
+                modifier = Modifier.weight(1f)
+            )
         }
+    }
 //    }
 }
 
 @Composable
 fun Friends(uiState: HomeUiState) {
-    Column {
-        TitleRow(
-            labelStringResource = R.string.your_friends,
-            buttonStringResource = R.string.add,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 20.dp, horizontal = 16.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        Column {
+            Text(
+                text = stringResource(R.string.your_friends),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(vertical = 24.dp)
+            )
+        }
+        ExtendedFloatingActionButton(
+            text = { Text(text = "Add Friends") },
+            icon = { Icon(Icons.Filled.Person, contentDescription = null) },
+            onClick = { /*TODO*/ },
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(vertical = 8.dp)
         )
     }
 }

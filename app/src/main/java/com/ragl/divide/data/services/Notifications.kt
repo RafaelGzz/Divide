@@ -13,13 +13,12 @@ import androidx.core.content.ContextCompat
 import com.ragl.divide.MainActivity
 import com.ragl.divide.R
 
-class ReminderNotificationReceiver : BroadcastReceiver() {
+class Notifications : BroadcastReceiver() {
 
     companion object {
         const val CHANNEL_ID = "reminder_channel"
         const val TITLE_EXTRA = "titleExtra"
         const val CONTENT_EXTRA = "contentExtra"
-        const val NOTIFICATION_ID = 1
     }
 
     private fun isNotificationsPermissionGranted(context: Context): Boolean =

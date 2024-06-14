@@ -2,8 +2,10 @@ package com.ragl.divide.data.services
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import com.ragl.divide.data.models.Frequency
@@ -37,9 +39,9 @@ class ScheduleNotificationService(
         time: Long,
         frequency: Frequency
     ) {
-        val intent = Intent(context, ReminderNotificationReceiver::class.java)
-        intent.putExtra(ReminderNotificationReceiver.TITLE_EXTRA, title)
-        intent.putExtra(ReminderNotificationReceiver.CONTENT_EXTRA, content)
+        val intent = Intent(context, Notifications::class.java)
+        intent.putExtra(Notifications.TITLE_EXTRA, title)
+        intent.putExtra(Notifications.CONTENT_EXTRA, content)
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -78,6 +80,17 @@ class ScheduleNotificationService(
                     pendingIntent
                 )
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.packageManager.setComponentEnabledSetting(
+                ComponentName(
+                    context,
+                    BootReminderNotificationsReceiver::class.java
+                ),
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP
+            )
+        }
     }
 
     fun cancelNotification(id: Int) {
@@ -85,7 +98,7 @@ class ScheduleNotificationService(
             PendingIntent.getBroadcast(
                 context,
                 id,
-                Intent(context, ReminderNotificationReceiver::class.java),
+                Intent(context, Notifications::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         )

@@ -90,12 +90,13 @@ fun DivideApp(
         composable<Screen.AddExpense> {
             val args: Screen.AddExpense = it.toRoute()
             ExpenseScreen(
-                onBackClick = { navController.popBackStack() },
+                onBackClick = { navController.navigateUp() },
                 expenseId = args.expenseId,
-                onAddExpense = {
+                onSaveExpense = {
                     if (args.expenseId.isEmpty()) navController.navTo(
                         Screen.Home(),
-                        true
+                        pop = true,
+                        incl = true
                     ) else navController.navTo(
                         Screen.ExpenseDetails(expenseId = args.expenseId),
                         pop = true,
@@ -111,12 +112,20 @@ fun DivideApp(
                 editExpense = { id ->
                     navController.navTo(Screen.AddExpense(expenseId = id))
                 },
-                onBackClick = { navController.popBackStack() },
+                onBackClick = { navController.navigateUp() },
                 onDeleteExpense = {
-                    navController.navTo(Screen.Home(), true)
+                    navController.navTo(
+                        Screen.Home(),
+                        pop = true,
+                        incl = true
+                    )
                 },
                 onPaidExpense = {
-                    navController.navTo(Screen.Home(true), true)
+                    navController.navTo(
+                        Screen.Home(true),
+                        pop = true,
+                        incl = true
+                    )
                 }
             )
         }
@@ -124,7 +133,7 @@ fun DivideApp(
             val args: Screen.AddGroup = it.toRoute()
             GroupScreen(
                 groupId = args.groupId,
-                onBackClick = { navController.popBackStack() },
+                onBackClick = { navController.navigateUp() },
                 onAddGroup = {
                     navController.navTo(Screen.Home(), true)
                 }
@@ -137,7 +146,7 @@ fun DivideApp(
                 editGroup = { id ->
                     navController.navTo(Screen.AddGroup(groupId = id))
                 },
-                onBackClick = { navController.popBackStack() },
+                onBackClick = { navController.navigateUp() },
                 onAddExpense = {
                     //navController.navTo(Screen.AddExpense(groupId = it))
                 }
