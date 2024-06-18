@@ -15,6 +15,8 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.database
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.storage
+import com.ragl.divide.data.repositories.FriendsRepository
+import com.ragl.divide.data.repositories.FriendsRepositoryImpl
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.GroupRepositoryImpl
 import com.ragl.divide.data.repositories.PreferencesRepository
@@ -80,4 +82,10 @@ object AppModule {
         userRepository: UserRepository
     ): GroupRepository = GroupRepositoryImpl(firebaseDatabase, firebaseStorage, userRepository)
 
+    @Provides
+    @Singleton
+    fun providesFriendsRepository(
+        firebaseDatabase: FirebaseDatabase,
+        firebaseAuth: FirebaseAuth
+    ): FriendsRepository = FriendsRepositoryImpl(firebaseDatabase, firebaseAuth)
 }

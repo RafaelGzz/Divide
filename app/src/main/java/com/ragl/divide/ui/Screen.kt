@@ -24,6 +24,8 @@ sealed class Screen(val route: String) {
 
     @Serializable
     data class ExpenseDetails(val expenseId: String = "") : Screen("ExpenseDetails")
+    @Serializable
+    data object AddFriends: Screen("AddFriends")
 
     companion object {
         fun stringToScreen(route: String): Screen = when (route) {

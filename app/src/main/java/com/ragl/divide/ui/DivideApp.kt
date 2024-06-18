@@ -19,6 +19,7 @@ import androidx.navigation.toRoute
 import com.ragl.divide.ui.screens.home.HomeScreen
 import com.ragl.divide.ui.screens.login.LoginScreen
 import com.ragl.divide.ui.screens.UserViewModel
+import com.ragl.divide.ui.screens.addFriends.AddFriendsScreen
 import com.ragl.divide.ui.screens.expense.ExpenseScreen
 import com.ragl.divide.ui.screens.expenseDetails.ExpenseDetailsScreen
 import com.ragl.divide.ui.screens.group.GroupScreen
@@ -67,22 +68,11 @@ fun DivideApp(
         composable<Screen.Home> {
             val args: Screen.Home = it.toRoute()
             HomeScreen(
-                onAddExpenseClick = {
-                    navController.navTo(
-                        Screen.AddExpense()
-                    )
-                },
-                onAddGroupClick = {
-                    navController.navTo(
-                        Screen.AddGroup()
-                    )
-                },
-                onExpenseClick = { expenseId ->
-                    navController.navTo(Screen.ExpenseDetails(expenseId = expenseId))
-                },
-                onGroupClick = { groupId ->
-                    navController.navTo(Screen.GroupDetails(groupId = groupId))
-                },
+                onAddExpenseClick = { navController.navTo(Screen.AddExpense()) },
+                onAddGroupClick = { navController.navTo(Screen.AddGroup()) },
+                onAddFriendsClick = { navController.navTo(Screen.AddFriends) },
+                onExpenseClick = { expenseId -> navController.navTo(Screen.ExpenseDetails(expenseId = expenseId)) },
+                onGroupClick = { groupId -> navController.navTo(Screen.GroupDetails(groupId = groupId)) },
                 onSignOut = { navController.navTo(Screen.Login, true) },
                 paidExpense = args.paidExpense
             )
@@ -109,9 +99,7 @@ fun DivideApp(
             val args: Screen.ExpenseDetails = it.toRoute()
             ExpenseDetailsScreen(
                 expenseId = args.expenseId,
-                editExpense = { id ->
-                    navController.navTo(Screen.AddExpense(expenseId = id))
-                },
+                editExpense = { id -> navController.navTo(Screen.AddExpense(expenseId = id)) },
                 onBackClick = { navController.navigateUp() },
                 onDeleteExpense = {
                     navController.navTo(
@@ -134,21 +122,25 @@ fun DivideApp(
             GroupScreen(
                 groupId = args.groupId,
                 onBackClick = { navController.navigateUp() },
-                onAddGroup = {
-                    navController.navTo(Screen.Home(), true)
-                }
+                onAddGroup = { navController.navTo(Screen.Home(), true) }
             )
         }
         composable<Screen.GroupDetails> {
             val args: Screen.GroupDetails = it.toRoute()
             GroupDetailsScreen(
                 groupId = args.groupId,
-                editGroup = { id ->
-                    navController.navTo(Screen.AddGroup(groupId = id))
-                },
+                editGroup = { id -> navController.navTo(Screen.AddGroup(groupId = id)) },
                 onBackClick = { navController.navigateUp() },
                 onAddExpense = {
                     //navController.navTo(Screen.AddExpense(groupId = it))
+                }
+            )
+        }
+        composable<Screen.AddFriends> {
+            AddFriendsScreen(
+                onBackClick = { navController.navigateUp() },
+                onAddFriend = {
+
                 }
             )
         }

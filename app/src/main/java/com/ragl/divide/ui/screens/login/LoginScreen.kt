@@ -214,7 +214,7 @@ private fun Login(
             imeAction = ImeAction.Done,
             //isPassword = true,
             onValueChange = { vm.updatePassword(it) },
-            onDone = { if (vm.isFieldsValid()) onLoginButtonClick(vm.email, vm.password) }
+            onAction = { if (vm.isFieldsValid()) onLoginButtonClick(vm.email, vm.password) }
         )
         LoginButton(
             label = stringResource(R.string.log_in),

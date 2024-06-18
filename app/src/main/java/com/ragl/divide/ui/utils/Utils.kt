@@ -52,6 +52,7 @@ fun DivideTextField(
     input: String,
     enabled: Boolean = true,
     placeholder: @Composable (() -> Unit)? = null,
+    keyboardActions: KeyboardActions = KeyboardActions(),
     singleLine: Boolean = true,
     errorText: Boolean = true,
     error: String = "",
@@ -59,7 +60,7 @@ fun DivideTextField(
     imeAction: ImeAction = ImeAction.Next,
     autoCorrect: Boolean = true,
     onValueChange: (String) -> Unit,
-    onDone: () -> Unit = {}
+    onAction: () -> Unit = {}
 ) {
     var passwordVisible by rememberSaveable {
         mutableStateOf(false)
@@ -134,7 +135,7 @@ fun DivideTextField(
                 autoCorrectEnabled = autoCorrect
             ),
             keyboardActions = KeyboardActions(
-                onDone = { onDone() }
+                onDone = { onAction() }
             ),
             onValueChange = { onValueChange(it) },
             modifier = Modifier

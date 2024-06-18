@@ -83,6 +83,7 @@ fun HomeScreen(
     onSignOut: () -> Unit,
     onExpenseClick: (String) -> Unit,
     onGroupClick: (String) -> Unit,
+    onAddFriendsClick: () -> Unit,
     paidExpense: Boolean = false
 ) {
     val uiState by vm.state.collectAsState()
@@ -169,7 +170,7 @@ fun HomeScreen(
                                 modifier = Modifier.verticalScroll(rememberScrollState())
                             )
 
-                            1 -> Friends(uiState = uiState)
+                            1 -> Friends(uiState = uiState, onAddFriendsClick = onAddFriendsClick)
                         }
                     }
                 }
@@ -219,7 +220,7 @@ private fun BottomBar(
 }
 
 @Composable
-fun Friends(uiState: HomeUiState) {
+fun Friends(uiState: HomeUiState, onAddFriendsClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -235,7 +236,7 @@ fun Friends(uiState: HomeUiState) {
         ExtendedFloatingActionButton(
             text = { Text(text = "Add Friends") },
             icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-            onClick = { /*TODO*/ },
+            onClick = onAddFriendsClick,
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.align(Alignment.BottomEnd).padding(vertical = 8.dp)
