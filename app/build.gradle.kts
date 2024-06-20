@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.play.services.auth)
     implementation(libs.firebase.storage)
+    implementation(libs.firebase.database.ktx)
 
     // Credentials
     implementation(libs.androidx.credentials)
@@ -99,7 +100,6 @@ dependencies {
 
     //Hilt
     implementation(libs.hilt.android)
-    implementation(libs.firebase.database.ktx)
     kapt(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 

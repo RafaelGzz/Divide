@@ -11,7 +11,7 @@ sealed class Screen(val route: String) {
     data object Login : Screen("Login")
 
     @Serializable
-    data class Home(val paidExpense: Boolean = false) : Screen("Home")
+    data object Home : Screen("Home")
 
     @Serializable
     data class AddGroup(val groupId: String = "") : Screen("AddGroup")
@@ -30,7 +30,7 @@ sealed class Screen(val route: String) {
     companion object {
         fun stringToScreen(route: String): Screen = when (route) {
             Login.route -> Login
-            Home().route -> Home()
+            Home.route -> Home
             else -> Login
         }
     }

@@ -48,33 +48,31 @@ fun DivideApp(
                 onGoogleButtonClick = {
                     userViewModel.signInWithGoogle(
                         context,
-                        { navController.navTo(Screen.Home(), true) },
+                        { navController.navTo(Screen.Home, true) },
                         { showToast(context, it) }
                     )
                 },
                 onLoginButtonClick = { email, password ->
                     userViewModel.signInWithEmailAndPassword(email, password,
-                        { navController.navTo(Screen.Home(), true) },
+                        { navController.navTo(Screen.Home, true) },
                         { showToast(context, it) })
                 },
                 onSignUpButtonClick = { email, password, name ->
                     userViewModel.signUpWithEmailAndPassword(email, password, name,
-                        { navController.navTo(Screen.Home(), true) },
+                        { navController.navTo(Screen.Home, true) },
                         { showToast(context, it) })
                 },
                 isLoading = isLoading
             )
         }
         composable<Screen.Home> {
-            val args: Screen.Home = it.toRoute()
             HomeScreen(
                 onAddExpenseClick = { navController.navTo(Screen.AddExpense()) },
                 onAddGroupClick = { navController.navTo(Screen.AddGroup()) },
                 onAddFriendsClick = { navController.navTo(Screen.AddFriends) },
                 onExpenseClick = { expenseId -> navController.navTo(Screen.ExpenseDetails(expenseId = expenseId)) },
                 onGroupClick = { groupId -> navController.navTo(Screen.GroupDetails(groupId = groupId)) },
-                onSignOut = { navController.navTo(Screen.Login, true) },
-                paidExpense = args.paidExpense
+                onSignOut = { navController.navTo(Screen.Login, true) }
             )
         }
         composable<Screen.AddExpense> {
@@ -84,7 +82,7 @@ fun DivideApp(
                 expenseId = args.expenseId,
                 onSaveExpense = {
                     if (args.expenseId.isEmpty()) navController.navTo(
-                        Screen.Home(),
+                        Screen.Home,
                         pop = true,
                         incl = true
                     ) else navController.navTo(
@@ -103,14 +101,14 @@ fun DivideApp(
                 onBackClick = { navController.navigateUp() },
                 onDeleteExpense = {
                     navController.navTo(
-                        Screen.Home(),
+                        Screen.Home,
                         pop = true,
                         incl = true
                     )
                 },
                 onPaidExpense = {
                     navController.navTo(
-                        Screen.Home(true),
+                        Screen.Home,
                         pop = true,
                         incl = true
                     )
@@ -122,7 +120,7 @@ fun DivideApp(
             GroupScreen(
                 groupId = args.groupId,
                 onBackClick = { navController.navigateUp() },
-                onAddGroup = { navController.navTo(Screen.Home(), true) }
+                onAddGroup = { navController.navTo(Screen.Home, true) }
             )
         }
         composable<Screen.GroupDetails> {
@@ -138,10 +136,7 @@ fun DivideApp(
         }
         composable<Screen.AddFriends> {
             AddFriendsScreen(
-                onBackClick = { navController.navigateUp() },
-                onAddFriend = {
-
-                }
+                onBackClick = { navController.navigateUp() }
             )
         }
     }

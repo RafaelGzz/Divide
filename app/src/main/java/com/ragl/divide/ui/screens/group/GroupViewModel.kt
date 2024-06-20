@@ -45,6 +45,7 @@ class GroupViewModel @Inject constructor(
     fun updateImage(image: Uri) {
         selectedImageUri = image
     }
+
     fun addUser(userId: String) {
         _state.update {
             it.copy(users = it.users.apply { set(userId, userId) })
@@ -68,7 +69,7 @@ class GroupViewModel @Inject constructor(
     }
 
     private fun validateName(): Boolean {
-        return when (_state.value.name.trim()) {
+        return when (_state.value.name) {
             "" -> {
                 this.nameError = "Title is required"
                 false
@@ -97,6 +98,9 @@ class GroupViewModel @Inject constructor(
 
     fun saveGroup(onSuccess: () -> Unit, onError: (String) -> Unit) {
         if (validateName()) {
+            _state.update {
+                it.copy(name = it.name.trim())
+            }
             viewModelScope.launch {
                 try {
                     _isLoading.update { true }

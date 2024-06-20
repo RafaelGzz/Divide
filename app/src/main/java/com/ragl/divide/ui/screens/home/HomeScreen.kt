@@ -29,16 +29,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -49,10 +52,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -62,6 +67,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -83,15 +89,14 @@ fun HomeScreen(
     onSignOut: () -> Unit,
     onExpenseClick: (String) -> Unit,
     onGroupClick: (String) -> Unit,
-    onAddFriendsClick: () -> Unit,
-    paidExpense: Boolean = false
+    onAddFriendsClick: () -> Unit
 ) {
     val uiState by vm.state.collectAsState()
     val tabs: List<Pair<Int, ImageVector>> = listOf(
         Pair(R.string.bar_item_home_text, Icons.Filled.AttachMoney),
         Pair(R.string.bar_item_friends_text, Icons.Filled.People)
     )
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val pullToRefreshState = rememberPullToRefreshState()
 
     var pullLoading by remember { mutableStateOf(uiState.isLoading) }
@@ -99,7 +104,15 @@ fun HomeScreen(
         pullLoading = uiState.isLoading
     }
 
-    var paidExpenseDialogVisible by remember { mutableStateOf(paidExpense) }
+    val friends = remember(uiState.friends) {
+        uiState.friends.values.toList().sortedBy { it.name }
+    }
+    val expenses = remember(uiState.expenses) {
+        uiState.expenses.values.toList().sortedBy { it.id }
+    }
+    val groups = remember(uiState.groups) {
+        uiState.groups.values.toList().sortedBy { it.id }
+    }
 
     Scaffold(
         bottomBar = {
@@ -117,52 +130,35 @@ fun HomeScreen(
                 .padding(paddingValues)
         ) {
             if (!uiState.isLoading) {
-                if (paidExpenseDialogVisible) {
-                    AlertDialog(
-                        onDismissRequest = { paidExpenseDialogVisible = false },
-                        confirmButton = {
-                            TextButton(onClick = { paidExpenseDialogVisible = false }) {
-                                Text(text = "OK")
-                            }
-                        },
-                        title = {
-                            Text(stringResource(R.string.congratulations))
-                        },
-                        text = {
-                            Text(stringResource(R.string.you_have_paid_your_expense_completely))
-                        },
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.99f),
-                        titleContentColor = MaterialTheme.colorScheme.primary,
-                        textContentColor = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                TopBar(
-                    user = uiState.user,
-                    onTapUserImage = { vm.signOut { onSignOut() } },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        //.padding(horizontal = 16.dp)
-                        //.clip(ShapeDefaults.Medium)
-                        //.background(MaterialTheme.colorScheme.primaryContainer)
-                        .padding(vertical = 16.dp, horizontal = 16.dp)
-                )
-                Box() {
-                    PullToRefreshBox(
-                        isRefreshing = pullLoading,
-                        state = pullToRefreshState,
-                        indicator = {
-                            Indicator(
-                                modifier = Modifier.align(Alignment.TopCenter),
-                                state = pullToRefreshState,
-                                isRefreshing = pullLoading,
-                                color = MaterialTheme.colorScheme.primary,
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        },
-                        onRefresh = { vm.getUserData() }) {
+                PullToRefreshBox(
+                    isRefreshing = pullLoading,
+                    state = pullToRefreshState,
+                    onRefresh = vm::getUserData,
+                    indicator = {
+                        Indicator(
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            state = pullToRefreshState,
+                            isRefreshing = pullLoading,
+                            color = MaterialTheme.colorScheme.primary,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    }
+                ) {
+                    Column {
+                        TopBar(
+                            user = uiState.user,
+                            onTapUserImage = { vm.signOut { onSignOut() } },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                //.padding(horizontal = 16.dp)
+                                //.clip(ShapeDefaults.Medium)
+                                //.background(MaterialTheme.colorScheme.primaryContainer)
+                                .padding(vertical = 16.dp, horizontal = 16.dp)
+                        )
                         when (selectedTabIndex) {
-                            0 -> Home(
-                                uiState = uiState,
+                            0 -> HomeBody(
+                                expenses = expenses,
+                                groups = groups,
                                 onAddExpenseClick = onAddExpenseClick,
                                 onAddGroupClick = onAddGroupClick,
                                 onExpenseClick = onExpenseClick,
@@ -170,7 +166,10 @@ fun HomeScreen(
                                 modifier = Modifier.verticalScroll(rememberScrollState())
                             )
 
-                            1 -> Friends(uiState = uiState, onAddFriendsClick = onAddFriendsClick)
+                            1 -> FriendsBody(
+                                friends = friends,
+                                onAddFriendsClick = onAddFriendsClick
+                            )
                         }
                     }
                 }
@@ -188,39 +187,10 @@ fun HomeScreen(
 }
 
 @Composable
-private fun BottomBar(
-    modifier: Modifier = Modifier,
-    tabs: List<Pair<Int, ImageVector>>,
-    selectedTabIndex: Int,
-    onItemClick: (Int) -> Unit
+fun FriendsBody(
+    friends: List<User>,
+    onAddFriendsClick: () -> Unit
 ) {
-//    Column(
-//        modifier = modifier.navigationBarsPadding(),
-//        verticalArrangement = Arrangement.SpaceAround
-//    ) {
-//        HorizontalDivider(thickness = 0.5.dp)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .height(80.dp)
-    ) {
-        tabs.forEachIndexed { index, pair ->
-            BottomBarItem(
-                labelStringResource = pair.first,
-                icon = pair.second,
-                selected = selectedTabIndex == index,
-                onItemClick = { onItemClick(index) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-//    }
-}
-
-@Composable
-fun Friends(uiState: HomeUiState, onAddFriendsClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -230,52 +200,87 @@ fun Friends(uiState: HomeUiState, onAddFriendsClick: () -> Unit) {
             Text(
                 text = stringResource(R.string.your_friends),
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 24.dp)
+                modifier = Modifier.padding(vertical = 26.dp)
             )
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (friends.isEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.you_have_no_friends),
+                            style = AppTypography.labelSmall,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                items(friends, key = { it.uuid }) { friend ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(CardDefaults.shape)
+                            .clickable {  },
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    ) {
+                        ListItem(
+                            colors = ListItemDefaults.colors(
+                                containerColor = Color.Transparent,
+                            ),
+                            headlineContent = { Text(text = friend.name) },
+                            supportingContent = { Text(text = friend.email) },
+                            leadingContent = {
+                                if (friend.photoUrl.isNotEmpty()) {
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(friend.photoUrl)
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(52.dp)
+                                            .clip(CircleShape)
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Filled.Person,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary)
+                                            .padding(12.dp)
+                                    )
+                                }
+                            },
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                }
+            }
         }
         ExtendedFloatingActionButton(
-            text = { Text(text = "Add Friends") },
+            text = { Text(stringResource(R.string.add_friends)) },
             icon = { Icon(Icons.Filled.Person, contentDescription = null) },
             onClick = onAddFriendsClick,
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(vertical = 8.dp)
+            elevation = FloatingActionButtonDefaults.elevation(0.dp),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(vertical = 8.dp)
         )
     }
 }
 
 @Composable
-private fun BottomBarItem(
+private fun HomeBody(
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
-    @StringRes labelStringResource: Int,
-    icon: ImageVector,
-    onItemClick: () -> Unit
-) {
-    Box(modifier = modifier.clickable { onItemClick() }) {
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .clip(ShapeDefaults.Medium)
-                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-            )
-            //Text(text = stringResource(labelStringResource), fontSize = 14.sp)
-        }
-    }
-}
-
-@Composable
-private fun Home(
-    modifier: Modifier = Modifier,
-    uiState: HomeUiState,
+    expenses: List<Expense>,
+    groups: List<Group>,
     onAddExpenseClick: () -> Unit,
     onAddGroupClick: () -> Unit,
     onExpenseClick: (String) -> Unit,
@@ -291,7 +296,7 @@ private fun Home(
                 .padding(vertical = 20.dp, horizontal = 16.dp)
         )
         ExpensesRow(
-            expenses = uiState.expenses.values.toList().sortedBy { it.id },
+            expenses = expenses,
             onExpenseClick = { onExpenseClick(it) },
             modifier = Modifier.fillMaxWidth()
         )
@@ -305,7 +310,7 @@ private fun Home(
                 .padding(vertical = 20.dp, horizontal = 16.dp)
         )
         GroupsColumn(
-            groups = uiState.groups.values.toList().sortedBy { it.id },
+            groups = groups,
             onGroupClick = { onGroupClick(it) },
             modifier = Modifier
                 .height(400.dp)
@@ -553,6 +558,59 @@ private fun TopBar(
                 text = stringResource(R.string.you_owe, owe),
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal)
             )
+        }
+    }
+}
+
+@Composable
+private fun BottomBar(
+    tabs: List<Pair<Int, ImageVector>>,
+    selectedTabIndex: Int,
+    onItemClick: (Int) -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .height(80.dp)
+    ) {
+        tabs.forEachIndexed { index, pair ->
+            BottomBarItem(
+                labelStringResource = pair.first,
+                icon = pair.second,
+                selected = selectedTabIndex == index,
+                onItemClick = { onItemClick(index) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun BottomBarItem(
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+    @StringRes labelStringResource: Int,
+    icon: ImageVector,
+    onItemClick: () -> Unit
+) {
+    Box(modifier = modifier.clickable { onItemClick() }) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .clip(ShapeDefaults.Medium)
+                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+            Text(text = stringResource(labelStringResource), fontSize = 14.sp)
         }
     }
 }

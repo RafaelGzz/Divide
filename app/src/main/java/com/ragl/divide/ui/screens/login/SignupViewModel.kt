@@ -93,7 +93,6 @@ class SignupViewModel: ViewModel() {
                 "Password must contain at least one number, one uppercase letter, one lowercase letter and one special character"
             return false
         }
-
         passwordError = ""
         return true
     }

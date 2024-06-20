@@ -51,7 +51,7 @@ class UserViewModel @Inject constructor(
             try {
                 _isLoading.value = true
                 if (userRepository.signInWithEmailAndPassword(email, password) != null) {
-                    preferencesRepository.saveStartDestination(Screen.Home().route)
+                    preferencesRepository.saveStartDestination(Screen.Home.route)
                     onSuccessfulLogin()
                 } else onFailedLogin("Failed to Log in")
             } catch (e: Exception) {
@@ -72,7 +72,7 @@ class UserViewModel @Inject constructor(
             try {
                 _isLoading.value = true
                 if (userRepository.signUpWithEmailAndPassword(email, password, name) != null) {
-                    preferencesRepository.saveStartDestination(Screen.Home().route)
+                    preferencesRepository.saveStartDestination(Screen.Home.route)
                     onSuccessfulLogin()
                 } else onFailedLogin("Failed to Log in")
             } catch (e: Exception) {
@@ -94,7 +94,7 @@ class UserViewModel @Inject constructor(
                 _isLoading.value = true
                 val authCredential = getAuthCredential(context)
                 if (userRepository.signInWithCredential(authCredential) != null) {
-                    preferencesRepository.saveStartDestination(Screen.Home().route)
+                    preferencesRepository.saveStartDestination(Screen.Home.route)
                     onSuccessfulLogin()
                 } else {
                     onFailedLogin("Failed to sign in")

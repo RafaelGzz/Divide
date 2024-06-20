@@ -7,14 +7,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.FriendsRepository
+import com.ragl.divide.data.repositories.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AddFriendsViewModel @Inject constructor(
-    private val repository: FriendsRepository
-): ViewModel(){
+    private val repository: FriendsRepository,
+    private val userRepository: UserRepository
+) : ViewModel() {
 
     var isLoading by mutableStateOf(false)
         private set
@@ -22,22 +24,52 @@ class AddFriendsViewModel @Inject constructor(
     var searchText by mutableStateOf("")
         private set
 
-    var friends by mutableStateOf(emptyMap<String, User>())
+    var users by mutableStateOf(emptyMap<String, User>())
         private set
 
-    fun updateSearchText(text: String){
+    var selectedUser by mutableStateOf<User?>(null)
+        private set
+
+    private var friends by mutableStateOf(emptyList<User>())
+
+    init {
+        viewModelScope.launch {
+            try {
+                friends = repository.getFriends(userRepository.getDatabaseUser()!!.friends).values.toList()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun updateSelectedUser(user: User) {
+        selectedUser = user
+    }
+
+    fun updateSearchText(text: String) {
         searchText = text
     }
 
-    fun getFriends(){
-        if(searchText.isEmpty()) {
-            friends = emptyMap()
+    fun searchUser() {
+        if (searchText.isEmpty()) {
+            users = emptyMap()
             return
         }
-        viewModelScope.launch{
+        viewModelScope.launch {
             isLoading = true
-            friends = repository.searchUsers(searchText)
+            users = repository.searchUsers(searchText, friends)
             isLoading = false
+        }
+    }
+
+    fun addFriend(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                repository.addFriend(selectedUser!!)
+                onSuccess()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

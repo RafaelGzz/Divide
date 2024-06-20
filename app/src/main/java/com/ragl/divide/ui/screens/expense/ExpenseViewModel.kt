@@ -142,13 +142,13 @@ class ExpenseViewModel @Inject constructor(
                     userRepository.saveExpense(
                         Expense(
                             id = id,
-                            title = title,
+                            title = title.trim(),
                             amount = amount.toDouble(),
                             category = category,
                             reminders = isRemindersEnabled,
                             numberOfPayments = payments.toInt(),
                             payments = if (id.isNotEmpty()) userRepository.getExpensePayments(id) else emptyMap(),
-                            notes = notes,
+                            notes = notes.trim(),
                             frequency = frequency,
                             startingDate = startingDate
                         )

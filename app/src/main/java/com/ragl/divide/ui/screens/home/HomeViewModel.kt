@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.User
+import com.ragl.divide.data.repositories.FriendsRepository
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
@@ -21,12 +22,14 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val expenses: Map<String, Expense> = emptyMap(),
     val groups: Map<String, Group> = emptyMap(),
+    val friends: Map<String, User> = emptyMap(),
     val user: User = User()
 )
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private var userRepository: UserRepository,
+    private var friendsRepository: FriendsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val groupRepository: GroupRepository
 ) : ViewModel() {
@@ -47,10 +50,12 @@ class HomeViewModel @Inject constructor(
                 val user = userRepository.getDatabaseUser()!!
                 val groups = groupRepository.getGroups(user.groups)
                 val expenses = userRepository.getExpenses()
+                val friends = friendsRepository.getFriends(user.friends)
                 _state.update {
                     it.copy(
                         expenses = expenses,
                         groups = groups,
+                        friends = friends,
                         user = user
                     )
                 }

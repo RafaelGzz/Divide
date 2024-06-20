@@ -21,7 +21,7 @@ class LoginViewModel: ViewModel() {
     }
 
     fun updatePassword(password: String) {
-        this.password = password.trim()
+        if(!password.contains(' ')) this.password = password
     }
     fun isFieldsValid(): Boolean {
         return validateEmail() && validatePassword()

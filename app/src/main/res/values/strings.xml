@@ -76,4 +76,9 @@
     <string name="total">Total</string>
     <string name="reminder_permission_title">Reminder permission</string>
     <string name="reminder_permission_message">In order to enable reminders for your expenses, you need to enable the permission on your device. Please select Divide from the app list and enable it.</string>
+    <string name="search_by_email">Search by email</string>
+    <string name="do_you_want_to_add">Do you want to add %1$s?</string>
+    <string name="add_friend">Add Friend</string>
+    <string name="add_friends">Add Friends</string>
+    <string name="you_have_no_friends">You have no friends, add some!</string>
 </resources>

@@ -76,4 +76,9 @@
     <string name="total">Total</string>
     <string name="reminder_permission_title">Permiso de recordatorios</string>
     <string name="reminder_permission_message">Para habilitar recordatorios en sus gastos, debe habilitar el permiso en su dispositivo. Seleccione Divide en la lista de aplicaciones y habilítelo.</string>
+    <string name="search_by_email">Buscar por correo electrónico</string>
+    <string name="do_you_want_to_add">Quieres añadir a %1$s?</string>
+    <string name="add_friend">Añadir amigo</string>
+    <string name="add_friends">Añadir amigos</string>
+    <string name="you_have_no_friends">No tienes amigos, añade alguno!</string>
 </resources>
