@@ -1,6 +1,5 @@
 package com.ragl.divide.data.repositories
 
-import android.util.Log
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -20,7 +19,7 @@ interface UserRepository {
 
     suspend fun createUserInDatabase(): User
 
-    suspend fun getDatabaseUser(): User?
+    suspend fun getUser(id: String): User
 
     fun getFirebaseUser(): FirebaseUser?
 
@@ -65,7 +64,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun signInWithEmailAndPassword(email: String, password: String): User? {
         val user = auth.signInWithEmailAndPassword(email, password).await().user
         return if (user != null) {
-            getDatabaseUser()
+            getUser(user.uid)
         } else {
             null
         }
@@ -89,11 +88,10 @@ class UserRepositoryImpl @Inject constructor(
         return userData
     }
 
-    override suspend fun getDatabaseUser(): User? {
-        val user = getFirebaseUser() ?: return null
-        val userRef = database.getReference("users/${user.uid}")
+    override suspend fun getUser(id: String): User {
+        val userRef = database.getReference("users/$id")
         val snapshot = userRef.get().await()
-        return snapshot.getValue(User::class.java)
+        return snapshot.getValue(User::class.java) ?: User()
     }
 
     override fun getFirebaseUser(): FirebaseUser? = auth.currentUser
@@ -106,7 +104,7 @@ class UserRepositoryImpl @Inject constructor(
             if (res.additionalUserInfo!!.isNewUser) {
                 createUserInDatabase()
             } else
-                getDatabaseUser()
+                getUser(res.user!!.uid)
         } else {
             null
         }

@@ -1,4 +1,4 @@
-package com.ragl.divide.ui.screens.login
+package com.ragl.divide.ui.screens.signIn
 
 import android.util.Patterns
 import androidx.compose.runtime.getValue
@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 
-class SignupViewModel: ViewModel() {
+class SignUpViewModel: ViewModel() {
     var email by mutableStateOf("")
         private set
     var emailError by mutableStateOf("")

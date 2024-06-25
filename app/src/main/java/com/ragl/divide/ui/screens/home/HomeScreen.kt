@@ -29,15 +29,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
@@ -57,7 +53,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -76,14 +71,16 @@ import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.getCategoryIcon
+import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.theme.AppTypography
+import com.ragl.divide.ui.utils.FriendItem
 import java.text.NumberFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    vm: HomeViewModel = hiltViewModel(),
+    vm: UserViewModel,
     onAddExpenseClick: () -> Unit,
     onAddGroupClick: () -> Unit,
     onSignOut: () -> Unit,
@@ -91,7 +88,7 @@ fun HomeScreen(
     onGroupClick: (String) -> Unit,
     onAddFriendsClick: () -> Unit
 ) {
-    val uiState by vm.state.collectAsState()
+    val user by vm.user.collectAsState()
     val tabs: List<Pair<Int, ImageVector>> = listOf(
         Pair(R.string.bar_item_home_text, Icons.Filled.AttachMoney),
         Pair(R.string.bar_item_friends_text, Icons.Filled.People)
@@ -99,37 +96,38 @@ fun HomeScreen(
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val pullToRefreshState = rememberPullToRefreshState()
 
-    var pullLoading by remember { mutableStateOf(uiState.isLoading) }
-    LaunchedEffect(uiState.isLoading) {
-        pullLoading = uiState.isLoading
+    var pullLoading by remember { mutableStateOf(user.isLoading) }
+    LaunchedEffect(user.isLoading) {
+        pullLoading = user.isLoading
     }
 
-    val friends = remember(uiState.friends) {
-        uiState.friends.values.toList().sortedBy { it.name }
+    val friends = remember(user.friends) {
+        user.friends.values.toList().sortedBy { it.name }
     }
-    val expenses = remember(uiState.expenses) {
-        uiState.expenses.values.toList().sortedBy { it.id }
+    val expenses = remember(user.expenses) {
+        user.expenses.values.toList().sortedBy { it.id }
     }
-    val groups = remember(uiState.groups) {
-        uiState.groups.values.toList().sortedBy { it.id }
+    val groups = remember(user.groups) {
+        user.groups.values.toList().sortedBy { it.id }
     }
 
     Scaffold(
         bottomBar = {
-            BottomBar(
-                tabs = tabs,
-                selectedTabIndex = selectedTabIndex,
-                onItemClick = {
-                    selectedTabIndex = it
-                }
-            )
+            if (!user.isLoading)
+                BottomBar(
+                    tabs = tabs,
+                    selectedTabIndex = selectedTabIndex,
+                    onItemClick = {
+                        selectedTabIndex = it
+                    }
+                )
         }
     ) { paddingValues ->
         Column(
             modifier = modifier
                 .padding(paddingValues)
         ) {
-            if (!uiState.isLoading) {
+            if (!user.isLoading) {
                 PullToRefreshBox(
                     isRefreshing = pullLoading,
                     state = pullToRefreshState,
@@ -146,7 +144,7 @@ fun HomeScreen(
                 ) {
                     Column {
                         TopBar(
-                            user = uiState.user,
+                            user = user.user,
                             onTapUserImage = { vm.signOut { onSignOut() } },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -216,48 +214,8 @@ fun FriendsBody(
                     }
                 }
                 items(friends, key = { it.uuid }) { friend ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(CardDefaults.shape)
-                            .clickable {  },
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    ) {
-                        ListItem(
-                            colors = ListItemDefaults.colors(
-                                containerColor = Color.Transparent,
-                            ),
-                            headlineContent = { Text(text = friend.name) },
-                            supportingContent = { Text(text = friend.email) },
-                            leadingContent = {
-                                if (friend.photoUrl.isNotEmpty()) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(LocalContext.current)
-                                            .data(friend.photoUrl)
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(CircleShape)
-                                    )
-                                } else {
-                                    Icon(
-                                        Icons.Filled.Person,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primary)
-                                            .padding(12.dp)
-                                    )
-                                }
-                            },
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
+                    FriendItem(friend) {
+
                     }
                 }
             }

@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.User
 import kotlinx.coroutines.tasks.await
 import java.util.Date
 
@@ -14,6 +15,7 @@ interface GroupRepository {
     suspend fun uploadPhoto(photoUri: Uri, id: String): String
     suspend fun getPhoto(id: String): String
     suspend fun addUser(groupId: String, userId: String)
+    suspend fun getUsers(userIds: List<String>): List<User>
     suspend fun leaveGroup(groupId: String)
 }
 
@@ -33,7 +35,7 @@ class GroupRepositoryImpl(
     override suspend fun getGroup(id: String): Group {
         val group = database.getReference("groups/$id").get().await().getValue(Group::class.java)
             ?: Group()
-        return group.copy(image = getPhoto(id))
+        return group.copy(image = if (group.image.isNotEmpty()) getPhoto(id) else "")
     }
 
     override suspend fun saveGroup(group: Group, photoUri: Uri) {
@@ -63,6 +65,14 @@ class GroupRepositoryImpl(
     override suspend fun addUser(groupId: String, userId: String) {
         val groupRef = database.getReference("groups/$groupId/users")
         groupRef.child(userId).setValue(userId).await()
+    }
+
+    override suspend fun getUsers(userIds: List<String>): List<User> {
+        val users = mutableListOf<User>()
+        userIds.map {
+            userRepository.getUser(it)
+        }.forEach { users.add(it) }
+        return users
     }
 
     override suspend fun leaveGroup(groupId: String) {

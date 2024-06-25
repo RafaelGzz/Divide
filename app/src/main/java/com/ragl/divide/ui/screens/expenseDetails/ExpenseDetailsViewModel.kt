@@ -23,13 +23,13 @@ class ExpenseDetailsViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
-    fun setExpense(expenseId: String) {
+    fun setExpense(expense: Expense) {
         viewModelScope.launch {
             _isLoading.update {
                 true
             }
             _expense.update {
-                userRepository.getExpense(expenseId)
+                expense
             }
             _isLoading.update {
                 false

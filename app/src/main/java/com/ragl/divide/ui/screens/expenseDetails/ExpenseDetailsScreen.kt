@@ -55,20 +55,19 @@ import java.math.RoundingMode
 import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Date
-import kotlin.math.exp
 
 @Composable
 fun ExpenseDetailsScreen(
     expenseDetailsViewModel: ExpenseDetailsViewModel = hiltViewModel(),
-    expenseId: String,
+    expense: Expense,
     editExpense: (String) -> Unit,
     onBackClick: () -> Unit,
     onDeleteExpense: () -> Unit,
-    onPaidExpense: () -> Unit
+    onPaidExpense: () -> Unit,
 ) {
 
     LaunchedEffect(Unit) {
-        expenseDetailsViewModel.setExpense(expenseId)
+        expenseDetailsViewModel.setExpense(expense)
     }
 
     var isDeleteDialogVisible by remember { mutableStateOf(false) }
@@ -78,23 +77,28 @@ fun ExpenseDetailsScreen(
     var isPaymentDialogVisible by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-    val expense by expenseDetailsViewModel.expense.collectAsState()
+    val expenseState by expenseDetailsViewModel.expense.collectAsState()
     val isLoading by expenseDetailsViewModel.isLoading.collectAsState()
+
+    val remainingBalance = remember(expenseState.amountPaid, expenseState.amount) {
+        (expenseState.amount - expenseState.amountPaid).toBigDecimal()
+            .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+    }
 
     Scaffold(
         topBar = {
             if (!isLoading)
                 ExpenseDetailsAppBar(
-                    expense = expense,
+                    expense = expenseState,
                     onBackClick = onBackClick,
                     onEditClick = {
-                        editExpense(expenseId)
+                        editExpense(expense.id)
                     },
                     onDeleteButtonClick = {
                         dialogMessage = R.string.delete_expense_confirm
                         onConfirmDeleteClick = {
                             expenseDetailsViewModel.deleteExpense(
-                                expense.id,
+                                expenseState.id,
                                 {
                                     isDeleteDialogVisible = false
                                     onDeleteExpense()
@@ -122,8 +126,7 @@ fun ExpenseDetailsScreen(
                 }
                 if (isPaymentDialogVisible) {
                     PaymentAlertDialog(
-                        remainingBalance = (expense.amount - expense.amountPaid).toBigDecimal()
-                            .setScale(2, RoundingMode.HALF_EVEN).toDouble(),
+                        remainingBalance = remainingBalance,
                         onDismissRequest = { isPaymentDialogVisible = false },
                         onConfirmClick = { amount ->
                             expenseDetailsViewModel.addPayment(
@@ -136,7 +139,7 @@ fun ExpenseDetailsScreen(
                     )
                 }
                 Text(
-                    text = NumberFormat.getCurrencyInstance().format(expense.amount),
+                    text = NumberFormat.getCurrencyInstance().format(expenseState.amount),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.headlineLarge,
                     modifier = Modifier.fillMaxWidth()
@@ -150,17 +153,20 @@ fun ExpenseDetailsScreen(
 //                    style = MaterialTheme.typography.labelMedium,
 //                    modifier = Modifier.fillMaxWidth()
 //                )
-//                if (expense.numberOfPayments > 1)
-//                    Text(
-//                        text = stringResource(R.string.s_payments, expense.numberOfPayments),
-//                        textAlign = TextAlign.Center,
-//                        style = MaterialTheme.typography.labelLarge,
-//                        modifier = Modifier.fillMaxWidth()
-//                    )
+
+                Text(
+                    text = stringResource(
+                        R.string.remaining_balance,
+                        NumberFormat.getCurrencyInstance().format(remainingBalance)
+                    ),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Text(
                     text = stringResource(
                         R.string.added_on,
-                        DateFormat.getDateInstance(DateFormat.LONG).format(Date(expense.addedDate))
+                        DateFormat.getDateInstance(DateFormat.LONG).format(Date(expenseState.addedDate))
                     ),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodySmall,
@@ -168,7 +174,7 @@ fun ExpenseDetailsScreen(
                         .fillMaxWidth()
                         .padding(top = 8.dp)
                 )
-                if (expense.notes != "") {
+                if (expenseState.notes != "") {
                     Text(
                         text = "${stringResource(R.string.notes)}:",
                         color = MaterialTheme.colorScheme.primary,
@@ -179,7 +185,7 @@ fun ExpenseDetailsScreen(
                             .padding(top = 16.dp)
                     )
                     Text(
-                        text = expense.notes,
+                        text = expenseState.notes,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.fillMaxWidth()
@@ -194,7 +200,7 @@ fun ExpenseDetailsScreen(
                         .padding(top = 20.dp, bottom = 10.dp)
                 )
                 LazyColumn {
-                    if (expense.payments.isEmpty()) {
+                    if (expenseState.payments.isEmpty()) {
                         item {
                             Text(
                                 stringResource(R.string.no_movements_yet),
@@ -207,7 +213,7 @@ fun ExpenseDetailsScreen(
                         }
                     }
                     items(
-                        expense.payments.entries.toList().sortedBy { it.value.date },
+                        expenseState.payments.entries.toList().sortedBy { it.value.date },
                         key = { it.key }) {
                         ListItem(
                             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -255,7 +261,7 @@ fun ExpenseDetailsScreen(
                                 .clip(ShapeDefaults.Medium)
                         )
                     }
-                    if (expense.payments.isNotEmpty())
+                    if (expenseState.payments.isNotEmpty())
                         item {
                             ListItem(
                                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -268,7 +274,7 @@ fun ExpenseDetailsScreen(
                                 headlineContent = {
                                     Text(
                                         NumberFormat.getCurrencyInstance()
-                                            .format(expense.amountPaid),
+                                            .format(expenseState.amountPaid),
                                         modifier = Modifier.padding(vertical = 16.dp)
                                     )
                                 },

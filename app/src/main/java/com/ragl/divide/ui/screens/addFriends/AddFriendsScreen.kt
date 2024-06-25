@@ -29,6 +29,7 @@ import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,17 +43,18 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.data.models.User
+import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.DivideTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddFriendsScreen(
     vm: AddFriendsViewModel = hiltViewModel(),
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    friends: List<User>
 ) {
 
     var showAddFriendDialog by remember { mutableStateOf(false) }
-
 
     Scaffold(
         topBar = {
@@ -109,11 +111,11 @@ fun AddFriendsScreen(
                     input = vm.searchText,
                     onValueChange = vm::updateSearchText,
                     imeAction = ImeAction.Done,
-                    onAction = vm::searchUser,
+                    onAction = { vm.searchUser(friends) },
                     modifier = Modifier.weight(1f)
                 )
                 Button(
-                    onClick = vm::searchUser,
+                    onClick = { vm.searchUser(friends) },
                     modifier = Modifier
                         .wrapContentSize()
                         .height(55.dp),

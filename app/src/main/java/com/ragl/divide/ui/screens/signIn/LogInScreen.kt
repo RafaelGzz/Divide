@@ -1,4 +1,4 @@
-package com.ragl.divide.ui.screens.login
+package com.ragl.divide.ui.screens.signIn
 
 import android.content.pm.ActivityInfo
 import androidx.compose.foundation.background
@@ -54,7 +54,7 @@ import com.ragl.divide.ui.utils.LockScreenOrientation
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(
+fun LogInScreen(
     modifier: Modifier = Modifier,
     onGoogleButtonClick: () -> Unit,
     onLoginButtonClick: (email: String, password: String) -> Unit,
@@ -195,7 +195,7 @@ private fun Login(
     onLoginButtonClick: (String, String) -> Unit,
     onGoogleButtonClick: () -> Unit
 ) {
-    val vm: LoginViewModel = remember { LoginViewModel() }
+    val vm: LogInViewModel = remember { LogInViewModel() }
     Column(
         modifier = modifier
     ) {
@@ -231,7 +231,7 @@ fun SignUp(
     onSignUpButtonClick: (String, String, String) -> Unit,
     onGoogleButtonClick: () -> Unit
 ) {
-    val vm: SignupViewModel = remember { SignupViewModel() }
+    val vm: SignUpViewModel = remember { SignUpViewModel() }
     Column(
         modifier = modifier
     ) {

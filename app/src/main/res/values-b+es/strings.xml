@@ -81,4 +81,6 @@
     <string name="add_friend">Añadir amigo</string>
     <string name="add_friends">Añadir amigos</string>
     <string name="you_have_no_friends">No tienes amigos, añade alguno!</string>
+    <string name="select_group_members">Selecciona miembros del grupo:</string>
+    <string name="group_members">Miembros del grupo:</string>
 </resources>

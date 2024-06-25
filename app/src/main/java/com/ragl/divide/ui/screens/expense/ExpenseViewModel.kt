@@ -153,16 +153,15 @@ class ExpenseViewModel @Inject constructor(
                             startingDate = startingDate
                         )
                     )
-                    if (isRemindersEnabled)
+                    scheduleNotificationService.cancelNotification(startingDate.toInt())
+                    if (isRemindersEnabled) {
                         scheduleNotificationService.scheduleNotification(
                             id = startingDate.toInt(),
                             title = "Expense - $title",
-                            content = "This is your reminder to pay $amount for $title",
+                            content = "Make a payment for $title",
                             startingDate,
                             frequency
                         )
-                    else {
-                        scheduleNotificationService.cancelNotification(startingDate.toInt())
                     }
                     onSuccess()
                 } catch (e: Exception) {
@@ -173,23 +172,18 @@ class ExpenseViewModel @Inject constructor(
         }
     }
 
-    fun setViewModelExpense(expenseId: String) {
+    fun setViewModelExpense(expense: Expense) {
         viewModelScope.launch {
-            try {
-                val expense = userRepository.getExpense(expenseId)
-                id = expense.id
-                title = expense.title
-                amount = expense.amount.toBigDecimal().toPlainString()
-                category = expense.category
-                isRemindersEnabled = expense.reminders
-                payments = expense.numberOfPayments.toString()
-                notes = expense.notes
-                frequency = expense.frequency
-                startingDate = expense.startingDate
-                amountPaid = expense.amountPaid
-            } catch (e: Exception) {
-                Log.e("ExpenseViewModel", "Error fetching expense: ${e.message}")
-            }
+            id = expense.id
+            title = expense.title
+            amount = expense.amount.toBigDecimal().toPlainString()
+            category = expense.category
+            isRemindersEnabled = expense.reminders
+            payments = expense.numberOfPayments.toString()
+            notes = expense.notes
+            frequency = expense.frequency
+            startingDate = expense.startingDate
+            amountPaid = expense.amountPaid
         }
     }
 }

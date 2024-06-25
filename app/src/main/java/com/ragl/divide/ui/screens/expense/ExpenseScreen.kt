@@ -58,6 +58,7 @@ import androidx.core.text.isDigitsOnly
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.data.models.Category
+import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.showToast
@@ -69,13 +70,15 @@ import java.util.Date
 @Composable
 fun ExpenseScreen(
     vm: ExpenseViewModel = hiltViewModel(),
-    expenseId: String,
+    expense: Expense,
+    isUpdate: Boolean = false,
     onBackClick: () -> Unit,
     onSaveExpense: () -> Unit
 ) {
-
     LaunchedEffect(Unit) {
-        if (expenseId.isNotEmpty()) vm.setViewModelExpense(expenseId)
+        if (isUpdate) {
+            vm.setViewModelExpense(expense)
+        }
     }
 
     var categoryMenuExpanded by remember { mutableStateOf(false) }
@@ -98,7 +101,7 @@ fun ExpenseScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        stringResource(if (expenseId.isEmpty()) R.string.add_expense else R.string.update_expense),
+                        stringResource(if (!isUpdate) R.string.add_expense else R.string.update_expense),
                         style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary)
                     )
                 },
@@ -129,7 +132,7 @@ fun ExpenseScreen(
                     .padding(horizontal = 16.dp, vertical = 32.dp)
             ) {
                 Text(
-                    text = stringResource(if (expenseId.isEmpty()) R.string.add else R.string.update),
+                    text = stringResource(if (!isUpdate) R.string.add else R.string.update),
                     style = MaterialTheme.typography.bodyLarge
                 )
             }

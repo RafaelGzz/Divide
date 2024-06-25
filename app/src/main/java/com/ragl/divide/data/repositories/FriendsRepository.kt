@@ -46,6 +46,7 @@ class FriendsRepositoryImpl(
     override suspend fun addFriend(friend: User): User {
         val uuid = auth.currentUser!!.uid
         database.getReference("users/$uuid/friends/${friend.uuid}").setValue(friend.uuid).await()
+        database.getReference("users/${friend.uuid}/friends/${uuid}").setValue(uuid).await()
         return friend
     }
 

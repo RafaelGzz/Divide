@@ -7,17 +7,22 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -49,9 +55,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ragl.divide.R
+import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.User
 import com.ragl.divide.ui.showToast
 import com.ragl.divide.ui.theme.AppTypography
 import com.ragl.divide.ui.utils.DivideTextField
+import com.ragl.divide.ui.utils.FriendItem
 import com.ragl.divide.ui.utils.createImageFile
 import java.util.Objects
 
@@ -59,12 +68,16 @@ import java.util.Objects
 @Composable
 fun GroupScreen(
     vm: GroupViewModel = hiltViewModel(),
-    groupId: String,
+    friends: List<User>,
+    group: Group,
+    isUpdate: Boolean,
     onBackClick: () -> Unit,
-    onAddGroup: () -> Unit
+    onAddGroup: () -> Unit,
 ) {
     LaunchedEffect(Unit) {
-        if (groupId.isNotEmpty()) vm.setGroup(groupId)
+        if (isUpdate) {
+            vm.setGroup(group)
+        }
     }
 
     var isModalSheetVisible by remember { mutableStateOf(false) }
@@ -78,16 +91,13 @@ fun GroupScreen(
     val context = LocalContext.current
 
     val file = context.createImageFile()
-
     val uri = FileProvider.getUriForFile(
         Objects.requireNonNull(context), context.packageName + ".provider", file
     )
-
     val cameraLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) {
-            vm.updateImage(uri)
+            if (it) vm.updateImage(uri)
         }
-
     val permissionLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
             if (it) {
@@ -96,14 +106,24 @@ fun GroupScreen(
         }
 
     val isLoading by vm.isLoading.collectAsState()
-    val group by vm.state.collectAsState()
+    val groupState by vm.group.collectAsState()
+
+    val defaultColors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    )
+    val selectedColors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    )
+    val selectedFriends = remember { mutableStateListOf<String>() }
 
     Box {
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
-                        Text(stringResource(if (groupId.isEmpty()) R.string.add_group else R.string.update_group))
+                        Text(stringResource(if (!isUpdate) R.string.add_group else R.string.update_group))
                     },
                     navigationIcon = {
                         IconButton(
@@ -117,7 +137,7 @@ fun GroupScreen(
             bottomBar = {
                 Button(
                     onClick = {
-                        vm.saveGroup(onSuccess = { onAddGroup() }, onError = {
+                        vm.saveGroup(onSuccess = onAddGroup, onError = {
                             showToast(context, it)
                         })
                     },
@@ -128,7 +148,7 @@ fun GroupScreen(
                         .padding(horizontal = 16.dp, vertical = 32.dp)
                 ) {
                     Text(
-                        text = stringResource(if (groupId.isEmpty()) R.string.add else R.string.update),
+                        text = stringResource(if (!isUpdate) R.string.add else R.string.update),
                         style = AppTypography.titleMedium
                     )
                 }
@@ -145,7 +165,8 @@ fun GroupScreen(
                         modifier = Modifier.clickable {
                             isModalSheetVisible = false
                             imagePickerLauncher.launch("image/*")
-                        })
+                        }
+                    )
                     ListItem(
                         headlineContent = { Text("Take photo") },
                         modifier = Modifier.clickable {
@@ -159,7 +180,8 @@ fun GroupScreen(
                             } else {
                                 permissionLauncher.launch(Manifest.permission.CAMERA)
                             }
-                        })
+                        }
+                    )
                 }
             }
             Column(
@@ -167,38 +189,71 @@ fun GroupScreen(
                     .padding(paddingValues)
                     .padding(horizontal = 16.dp)
             ) {
-                DivideTextField(
-                    label = stringResource(R.string.name),
-                    input = group.name,
-                    error = vm.nameError,
-                    onValueChange = { vm.updateName(it) })
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                        .clickable { isModalSheetVisible = true }
-                        .clip(ShapeDefaults.Medium)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (group.image.isEmpty() && vm.selectedImageUri == Uri.EMPTY) Icon(
-                        Icons.Filled.AddAPhoto,
-                        contentDescription = "Add image button",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    Box(
                         modifier = Modifier
-                            .size(64.dp)
-                            .align(Alignment.Center)
-                    )
-                    else {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(if (vm.selectedImageUri == Uri.EMPTY) group.image else vm.selectedImageUri)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            .size(80.dp)
+                            .clickable { isModalSheetVisible = true }
+                            .clip(ShapeDefaults.Medium)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                    ) {
+                        if (groupState.image.isEmpty() && vm.selectedImageUri == Uri.EMPTY) Icon(
+                            Icons.Filled.AddAPhoto,
+                            contentDescription = "Add image button",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .align(Alignment.Center)
                         )
+                        else {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(if (vm.selectedImageUri == Uri.EMPTY) groupState.image else vm.selectedImageUri)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
                     }
+                    DivideTextField(
+                        label = stringResource(R.string.name),
+                        input = groupState.name,
+                        error = vm.nameError,
+                        onValueChange = { vm.updateName(it) })
+                }
+                Text(
+                    text = stringResource(if (!isUpdate) R.string.select_group_members else R.string.group_members),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!isUpdate)
+                        items(friends, key = { it.uuid }) { friend ->
+                            val isSelected = selectedFriends.contains(friend.uuid)
+                            FriendItem(
+                                friend = friend,
+                                colors = if (isSelected) selectedColors else defaultColors,
+                                onClick = {
+                                    if (isSelected) {
+                                        vm.removeUser(friend.uuid)
+                                        selectedFriends.remove(friend.uuid)
+                                    } else {
+                                        vm.addUser(friend.uuid)
+                                        selectedFriends.add(friend.uuid)
+                                    }
+                                }
+
+                            )
+                        }
+                    else
+                        items(vm.members, key = { it.uuid }) {friend ->
+                            FriendItem(friend = friend)
+                        }
                 }
             }
 

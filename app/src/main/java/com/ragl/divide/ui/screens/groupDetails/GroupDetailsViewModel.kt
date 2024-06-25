@@ -23,39 +23,16 @@ class GroupDetailsViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
-    fun setGroup(groupId: String) {
+    fun setGroup(group: Group) {
         viewModelScope.launch {
             _isLoading.update {
                 true
             }
             _group.update {
-                groupRepository.getGroup(groupId)
+                group
             }
             _isLoading.update {
                 false
-            }
-        }
-    }
-
-    fun addUser(userId: String) {
-        viewModelScope.launch {
-            _isLoading.update {
-                true
-            }
-            groupRepository.addUser(userId, _group.value.id)
-            _isLoading.update {
-                false
-            }
-        }
-    }
-
-    fun leaveGroup(onSuccessful: () -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            try{
-                groupRepository.leaveGroup(_group.value.id)
-            }catch (e: Exception){
-                Log.e("GroupDetailsViewModel", e.message, e)
-                onError(e.message ?: "An error occurred")
             }
         }
     }

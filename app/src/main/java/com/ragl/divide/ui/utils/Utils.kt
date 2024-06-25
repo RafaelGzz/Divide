@@ -3,17 +3,28 @@ package com.ragl.divide.ui.utils
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
@@ -37,6 +48,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.ragl.divide.data.models.User
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -178,4 +192,66 @@ fun Context.createImageFile(): File {
     val image = File.createTempFile(imageFileName, ".jpg", externalCacheDir)
 
     return image
+}
+
+@Composable
+fun FriendItem(
+    friend: User,
+    colors: CardColors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    ),
+    onClick: (() -> Unit)? = null
+) {
+    val interactionSource by remember { mutableStateOf(MutableInteractionSource()) }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CardDefaults.shape)
+            .clickable(interactionSource = interactionSource, indication = null){
+                if (onClick != null) {
+                    onClick()
+                }
+            },
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = colors
+    ) {
+        ListItem(
+            colors = ListItemDefaults.colors(
+                containerColor = Color.Transparent,
+            ),
+            headlineContent = {
+                Text(
+                    text = friend.name,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            },
+            supportingContent = { Text(text = friend.email) },
+            leadingContent = {
+                if (friend.photoUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(friend.photoUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Icon(
+                        Icons.Filled.Person,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .size(52.dp)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .padding(12.dp)
+                    )
+                }
+            },
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
+    }
 }
