@@ -88,7 +88,6 @@ fun HomeScreen(
     onGroupClick: (String) -> Unit,
     onAddFriendsClick: () -> Unit
 ) {
-    val user by vm.user.collectAsState()
     val tabs: List<Pair<Int, ImageVector>> = listOf(
         Pair(R.string.bar_item_home_text, Icons.Filled.AttachMoney),
         Pair(R.string.bar_item_friends_text, Icons.Filled.People)
@@ -96,11 +95,7 @@ fun HomeScreen(
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val pullToRefreshState = rememberPullToRefreshState()
 
-    var pullLoading by remember { mutableStateOf(user.isLoading) }
-    LaunchedEffect(user.isLoading) {
-        pullLoading = user.isLoading
-    }
-
+    val user by vm.user.collectAsState()
     val friends = remember(user.friends) {
         user.friends.values.toList().sortedBy { it.name }
     }
@@ -109,6 +104,11 @@ fun HomeScreen(
     }
     val groups = remember(user.groups) {
         user.groups.values.toList().sortedBy { it.id }
+    }
+
+    var pullLoading by remember { mutableStateOf(user.isLoading) }
+    LaunchedEffect(user.isLoading) {
+        pullLoading = user.isLoading
     }
 
     Scaffold(

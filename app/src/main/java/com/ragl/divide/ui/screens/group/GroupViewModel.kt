@@ -32,9 +32,6 @@ class GroupViewModel @Inject constructor(
         private set
     var nameError by mutableStateOf("")
         private set
-    var imageError by mutableStateOf("")
-        private set
-    var usersError by mutableStateOf("")
 
     private var _isLoading = MutableStateFlow(false)
     var isLoading = _isLoading.asStateFlow()
@@ -74,9 +71,9 @@ class GroupViewModel @Inject constructor(
 
     fun leaveGroup(onSuccessful: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            try{
+            try {
                 groupRepository.leaveGroup(_group.value.id)
-            }catch (e: Exception){
+            } catch (e: Exception) {
                 Log.e("GroupDetailsViewModel", e.message, e)
                 onError(e.message ?: "An error occurred")
             }
@@ -92,20 +89,6 @@ class GroupViewModel @Inject constructor(
 
             else -> {
                 this.nameError = ""
-                true
-            }
-        }
-    }
-
-    private fun validateImage(): Boolean {
-        return when (_group.value.image.trim()) {
-            "" -> {
-                this.imageError = "Image is required"
-                false
-            }
-
-            else -> {
-                this.imageError = ""
                 true
             }
         }
@@ -133,4 +116,17 @@ class GroupViewModel @Inject constructor(
         }
     }
 
+    fun deleteGroup(onDelete: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                groupRepository.deleteGroup(
+                    _group.value.id,
+                    if (_group.value.image.isNotEmpty()) _group.value.id else ""
+                )
+                onDelete()
+            } catch (e: Exception) {
+                Log.e("GroupDetailsViewModel", e.message, e)
+            }
+        }
+    }
 }

@@ -35,7 +35,8 @@ interface UserRepository {
     suspend fun getExpensePayments(expenseId: String): Map<String, Payment>
     suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean)
     suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String)
-    suspend fun saveGroup(id: String)
+    suspend fun saveGroup(id: String, userId: String)
+    suspend fun leaveGroup(groupId: String, userId: String)
 }
 
 @Singleton
@@ -43,6 +44,9 @@ class UserRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
     private val database: FirebaseDatabase
 ) : UserRepository {
+    init {
+        database.getReference("users").apply { keepSynced(true) }
+    }
 
     override fun isUserSignedIn(): Boolean = auth.currentUser != null
 
@@ -193,9 +197,13 @@ class UserRepositoryImpl @Inject constructor(
         expensesRef.child(id).removeValue().await()
     }
 
-    override suspend fun saveGroup(id: String){
-        val user = getFirebaseUser() ?: return
-        val groupRef = database.getReference("users/${user.uid}/groups")
+    override suspend fun saveGroup(id: String, userId: String){
+        val groupRef = database.getReference("users/$userId/groups")
         groupRef.child(id).setValue(id).await()
+    }
+
+    override suspend fun leaveGroup(groupId: String, userId: String) {
+        val groupRef = database.getReference("users/$userId/groups")
+        groupRef.child(groupId).removeValue().await()
     }
 }

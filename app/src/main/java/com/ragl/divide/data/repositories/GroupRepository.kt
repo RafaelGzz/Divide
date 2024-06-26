@@ -17,6 +17,7 @@ interface GroupRepository {
     suspend fun addUser(groupId: String, userId: String)
     suspend fun getUsers(userIds: List<String>): List<User>
     suspend fun leaveGroup(groupId: String)
+    suspend fun deleteGroup(groupId: String, image: String)
 }
 
 class GroupRepositoryImpl(
@@ -24,6 +25,10 @@ class GroupRepositoryImpl(
     private val storage: FirebaseStorage,
     private val userRepository: UserRepository
 ) : GroupRepository {
+    init {
+        database.getReference("groups").apply { keepSynced(true) }
+    }
+
     override suspend fun getGroups(groupIds: Map<String, String>): Map<String, Group> {
         val groups = mutableMapOf<String, Group>()
         groupIds.values.mapNotNull {
@@ -41,14 +46,16 @@ class GroupRepositoryImpl(
     override suspend fun saveGroup(group: Group, photoUri: Uri) {
         val id = group.id.ifEmpty { "id${Date().time}" }
         val uid = userRepository.getFirebaseUser()!!.uid
+        group.users[uid] = uid
         database.getReference("groups/$id").setValue(
             group.copy(
                 image = if (photoUri != Uri.EMPTY) uploadPhoto(photoUri, id) else group.image,
-                id = id,
-                users = group.users.apply { set(uid, uid) }
+                id = id
             )
         ).await()
-        userRepository.saveGroup(id)
+        group.users.forEach{
+            userRepository.saveGroup(id, it.key)
+        }
     }
 
     override suspend fun uploadPhoto(photoUri: Uri, id: String): String {
@@ -79,5 +86,20 @@ class GroupRepositoryImpl(
         val user = userRepository.getFirebaseUser() ?: return
         val groupRef = database.getReference("groups/$groupId/users")
         groupRef.child(user.uid).removeValue().await()
+        val userRef = database.getReference("users/${user.uid}/groups")
+        userRef.child(groupId).removeValue().await()
+    }
+
+    override suspend fun deleteGroup(groupId: String, image: String) {
+        val groupRef = database.getReference("groups/$groupId")
+        if (image.isNotEmpty()) {
+            storage.getReference("groupPhotos/$image.jpg").delete().await()
+        }
+        groupRef.child("users").get().await().children.mapNotNull {
+            it.getValue(String::class.java)
+        }.forEach {
+            userRepository.leaveGroup(groupId, it)
+        }
+        groupRef.removeValue().await()
     }
 }

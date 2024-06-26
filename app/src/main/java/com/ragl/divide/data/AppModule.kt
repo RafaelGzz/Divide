@@ -44,7 +44,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseDatabase(): FirebaseDatabase = Firebase.database
+    fun provideFirebaseDatabase(): FirebaseDatabase = Firebase.database.apply { setPersistenceEnabled(true) }
 
     @Provides
     @Singleton

@@ -5,23 +5,32 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,9 +40,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -72,6 +83,7 @@ fun GroupScreen(
     group: Group,
     isUpdate: Boolean,
     onBackClick: () -> Unit,
+    onDeleteGroup: () -> Unit,
     onAddGroup: () -> Unit,
 ) {
     LaunchedEffect(Unit) {
@@ -118,6 +130,9 @@ fun GroupScreen(
     )
     val selectedFriends = remember { mutableStateListOf<String>() }
 
+    var dialogEnabled by remember { mutableStateOf(false) }
+    var isDeleteDialog by remember { mutableStateOf(false) }
+
     Box {
         Scaffold(
             topBar = {
@@ -152,7 +167,6 @@ fun GroupScreen(
                         style = AppTypography.titleMedium
                     )
                 }
-
             }
         ) { paddingValues ->
             if (isModalSheetVisible) {
@@ -183,6 +197,53 @@ fun GroupScreen(
                         }
                     )
                 }
+            } else if (dialogEnabled) {
+                if (isDeleteDialog)
+                    AlertDialog(
+                        onDismissRequest = { dialogEnabled = false },
+                        title = { Text(stringResource(R.string.delete_group)) },
+                        text = { Text(stringResource(R.string.delete_group_message)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                dialogEnabled = false
+                                vm.deleteGroup(onDeleteGroup)
+                            }) {
+                                Text(stringResource(R.string.delete))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { dialogEnabled = false }) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                        textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                else
+                    AlertDialog(
+                        onDismissRequest = { dialogEnabled = false },
+                        title = { Text(stringResource(R.string.leave_group)) },
+                        text = { Text(stringResource(R.string.leave_group_message)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                dialogEnabled = false
+                                vm.leaveGroup(
+                                    onSuccessful = onDeleteGroup,
+                                    onError = { showToast(context, it) })
+                            }) {
+                                Text(stringResource(R.string.leave))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { dialogEnabled = false }) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                        textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
             }
             Column(
                 modifier = Modifier
@@ -190,7 +251,9 @@ fun GroupScreen(
                     .padding(horizontal = 16.dp)
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .wrapContentHeight()
                 ) {
                     Box(
                         modifier = Modifier
@@ -228,10 +291,14 @@ fun GroupScreen(
                 Text(
                     text = stringResource(if (!isUpdate) R.string.select_group_members else R.string.group_members),
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .wrapContentHeight()
                 )
 
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     if (!isUpdate)
                         items(friends, key = { it.uuid }) { friend ->
                             val isSelected = selectedFriends.contains(friend.uuid)
@@ -247,13 +314,70 @@ fun GroupScreen(
                                         selectedFriends.add(friend.uuid)
                                     }
                                 }
-
                             )
                         }
                     else
-                        items(vm.members, key = { it.uuid }) {friend ->
+                        items(vm.members, key = { it.uuid }) { friend ->
                             FriendItem(friend = friend)
                         }
+                }
+                Column(modifier = Modifier.wrapContentHeight()) {
+                    if (isUpdate) {
+                        Text(
+                            text = stringResource(R.string.configuration),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier
+                                .padding(top = 16.dp)
+                                .wrapContentHeight()
+                        )
+                        if (groupState.users.size != 1) {
+                            OutlinedButton(
+                                onClick = {
+                                    isDeleteDialog = false
+                                    dialogEnabled = true
+                                },
+                                shape = ShapeDefaults.Medium,
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.errorContainer
+                                ),
+                                border = BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.errorContainer
+                                ),
+                                modifier = Modifier
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth()
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                                Text(
+                                    text = stringResource(R.string.leave_group),
+                                    style = AppTypography.titleMedium,
+                                    modifier = Modifier.padding(vertical = 12.dp)
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = {
+                                isDeleteDialog = true
+                                dialogEnabled = true
+                            },
+                            shape = ShapeDefaults.Medium,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ),
+                            modifier = Modifier
+                                .padding(top = 8.dp, bottom = 16.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                            Text(
+                                text = stringResource(R.string.delete_group),
+                                style = AppTypography.titleMedium,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
+                        }
+                    }
                 }
             }
 

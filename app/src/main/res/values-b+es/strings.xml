@@ -81,6 +81,12 @@
     <string name="add_friend">Añadir amigo</string>
     <string name="add_friends">Añadir amigos</string>
     <string name="you_have_no_friends">No tienes amigos, añade alguno!</string>
-    <string name="select_group_members">Selecciona miembros del grupo:</string>
-    <string name="group_members">Miembros del grupo:</string>
+    <string name="select_group_members">Selecciona miembros del grupo</string>
+    <string name="group_members">Miembros del grupo</string>
+    <string name="delete_group">Eliminar Grupo</string>
+    <string name="leave_group">Salir del Grupo</string>
+    <string name="delete_group_message">¿Estás seguro de eliminar este Grupo?\nESTA ACCIÓN NO SE PUEDE DESHACER</string>
+    <string name="leave_group_message">¿Estás seguro de salir del Grupo?</string>
+    <string name="leave">Salir</string>
+    <string name="configuration">Configuración</string>
 </resources>

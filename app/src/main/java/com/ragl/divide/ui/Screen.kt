@@ -4,26 +4,25 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 sealed class Screen(val route: String) {
+
     @Serializable
     data object Splash : Screen("Splash")
-
     @Serializable
     data object Login : Screen("Login")
-
     @Serializable
     data object Home : Screen("Home")
-
-    @Serializable
-    data class Group(val groupId: String = "") : Screen("Group")
-
-    @Serializable
-    data class GroupDetails(val groupId: String = "") : Screen("GroupDetails")
-
     @Serializable
     data class Expense(val expenseId: String = "") : Screen("Expense")
-
     @Serializable
     data class ExpenseDetails(val expenseId: String = "") : Screen("ExpenseDetails")
+    @Serializable
+    data class Group(val groupId: String = "") : Screen("Group")
+    @Serializable
+    data class GroupDetails(val groupId: String = "") : Screen("GroupDetails")
+    @Serializable
+    data object GroupExpense : Screen("GroupExpense")
+    @Serializable
+    data class GroupExpenseDetails(val expenseId: String = "") : Screen("GroupExpenseDetails")
     @Serializable
     data object AddFriends: Screen("AddFriends")
 

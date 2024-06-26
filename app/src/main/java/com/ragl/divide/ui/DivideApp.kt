@@ -27,6 +27,7 @@ import com.ragl.divide.ui.screens.expense.ExpenseScreen
 import com.ragl.divide.ui.screens.expenseDetails.ExpenseDetailsScreen
 import com.ragl.divide.ui.screens.group.GroupScreen
 import com.ragl.divide.ui.screens.groupDetails.GroupDetailsScreen
+import com.ragl.divide.ui.screens.groupExpense.GroupExpenseScreen
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -98,18 +99,20 @@ fun DivideApp(
                 expense = if(isUpdate) user.expenses[args.expenseId]!! else Expense(),
                 isUpdate = isUpdate,
                 onSaveExpense = {
-                    if (args.expenseId.isEmpty()) {
+                    if (isUpdate) {
                         userViewModel.getUserData()
                         navController.navTo(
                             Screen.Home,
                             pop = true,
                             incl = true
                         )
-                    } else navController.navTo(
-                        Screen.ExpenseDetails(expenseId = args.expenseId),
-                        pop = true,
-                        incl = true
-                    )
+                    } else {
+                        navController.navTo(
+                            Screen.ExpenseDetails(expenseId = args.expenseId),
+                            pop = true,
+                            incl = true
+                        )
+                    }
                 },
             )
         }
@@ -142,9 +145,13 @@ fun DivideApp(
             val isUpdate = args.groupId.isNotEmpty()
             GroupScreen(
                 friends = user.friends.values.toList(),
-                group = if(isUpdate) user.groups[args.groupId]!! else Group(),
+                group = if(isUpdate) user.groups[args.groupId] ?: Group() else Group(),
                 isUpdate = isUpdate,
                 onBackClick = { navController.navigateUp() },
+                onDeleteGroup = {
+                    userViewModel.getUserData()
+                    navController.navTo(Screen.Home, true)
+                },
                 onAddGroup = {
                     userViewModel.getUserData()
                     navController.navTo(Screen.Home, true)
@@ -157,9 +164,13 @@ fun DivideApp(
                 group = user.groups[args.groupId]!!,
                 editGroup = { id -> navController.navTo(Screen.Group(groupId = id)) },
                 onBackClick = { navController.navigateUp() },
-                onAddExpense = {
-                    //navController.navTo(Screen.AddExpense(groupId = it))
-                }
+                onAddExpenseClick = { navController.navTo(Screen.GroupExpense) }
+            )
+        }
+        composable<Screen.GroupExpense> {
+            GroupExpenseScreen(
+                onBackClick = { navController.navigateUp() },
+                onSaveExpense = {}
             )
         }
         composable<Screen.AddFriends> {

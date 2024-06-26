@@ -62,7 +62,7 @@ fun GroupDetailsScreen(
     group: Group,
     editGroup: (String) -> Unit,
     onBackClick: () -> Unit,
-    onAddExpense: () -> Unit,
+    onAddExpenseClick: () -> Unit,
 ) {
 
     LaunchedEffect(Unit) {
@@ -97,6 +97,7 @@ fun GroupDetailsScreen(
                 TitleRow(
                     buttonStringResource = R.string.add_expense,
                     labelStringResource = R.string.group_expenses,
+                    onAddClick = onAddExpenseClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 20.dp)
