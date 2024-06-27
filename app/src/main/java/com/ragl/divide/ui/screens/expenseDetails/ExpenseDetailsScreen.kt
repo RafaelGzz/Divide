@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.data.models.Expense
+import com.ragl.divide.data.models.Payment
 import com.ragl.divide.ui.screens.home.TitleRow
 import com.ragl.divide.ui.showToast
 import com.ragl.divide.ui.utils.DivideTextField
@@ -61,6 +62,7 @@ fun ExpenseDetailsScreen(
     expenseDetailsViewModel: ExpenseDetailsViewModel = hiltViewModel(),
     expense: Expense,
     editExpense: (String) -> Unit,
+    onPaymentMade: (Payment) -> Unit,
     onBackClick: () -> Unit,
     onDeleteExpense: () -> Unit,
     onPaidExpense: () -> Unit,
@@ -131,8 +133,9 @@ fun ExpenseDetailsScreen(
                         onConfirmClick = { amount ->
                             expenseDetailsViewModel.addPayment(
                                 amount = amount,
+                                onSuccess = onPaymentMade,
                                 onFailure = { showToast(context, it) },
-                                onPaidExpense = { onPaidExpense() }
+                                onPaidExpense = onPaidExpense
                             )
                             isPaymentDialogVisible = false
                         }

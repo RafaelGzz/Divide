@@ -73,7 +73,7 @@ fun ExpenseScreen(
     expense: Expense,
     isUpdate: Boolean = false,
     onBackClick: () -> Unit,
-    onSaveExpense: () -> Unit
+    onSaveExpense: (Expense) -> Unit
 ) {
     LaunchedEffect(Unit) {
         if (isUpdate) {
@@ -119,7 +119,7 @@ fun ExpenseScreen(
                 onClick = {
                     vm.saveExpense(
                         scheduleNotificationService = scheduleNotificationService,
-                        onSuccess = { onSaveExpense() },
+                        onSuccess = onSaveExpense,
                         onError = {
                             showToast(context, it)
                         }

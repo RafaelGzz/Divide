@@ -88,7 +88,7 @@ fun GroupScreen(
     isUpdate: Boolean,
     onBackClick: () -> Unit,
     onDeleteGroup: () -> Unit,
-    onAddGroup: () -> Unit,
+    onSaveGroup: (Group) -> Unit,
 ) {
     LaunchedEffect(Unit) {
         if (isUpdate) {
@@ -164,7 +164,7 @@ fun GroupScreen(
                 bottomBar = {
                     Button(
                         onClick = {
-                            vm.saveGroup(onSuccess = onAddGroup, onError = {
+                            vm.saveGroup(onSuccess = onSaveGroup, onError = {
                                 showToast(context, it)
                             })
                         },
@@ -424,7 +424,7 @@ fun GroupScreen(
             FriendSelectionScreen(
                 friends = friends,
                 selectedFriends = selectedFriends,
-                members = groupState.users,
+                members = vm.members,
                 searchText = searchText,
                 onSearchTextChange = { text, filter ->
                     searchText = text
@@ -439,11 +439,9 @@ fun GroupScreen(
                 },
                 onAddClick = {
                     showFriendSelection = false
-                    // Add selected friends to vm.members (assuming vm.members is a MutableList)
                     friends.filter { selectedFriends.contains(it.uuid) }.map {
                         vm.addMember(it)
                     }
-                    // Clear selectedFriends after adding
                     selectedFriends.clear()
                 },
                 onBackClick = { showFriendSelection = false },
@@ -468,7 +466,7 @@ fun GroupScreen(
 @Composable
 fun FriendSelectionScreen(
     friends: List<User>,
-    members: MutableMap<String, String>,
+    members: List<User>,
     selectedFriends: List<String>,
     searchText: String,
     onSearchTextChange: (String, () -> Unit) -> Unit,
@@ -527,7 +525,7 @@ fun FriendSelectionScreen(
             ) {
                 items(filteredFriends, key = { it.uuid }) { friend ->
                     val isSelected = selectedFriends.contains(friend.uuid)
-                    val isFriendInGroup = members.containsKey(friend.uuid)
+                    val isFriendInGroup = members.find { it.uuid == friend.uuid } != null
                     val friendItemColors = if (isFriendInGroup) {
                         defaultColors
                     } else if (isSelected) {

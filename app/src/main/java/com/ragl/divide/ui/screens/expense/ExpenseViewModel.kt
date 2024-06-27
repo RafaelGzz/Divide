@@ -132,14 +132,14 @@ class ExpenseViewModel @Inject constructor(
     }
 
     fun saveExpense(
-        onSuccess: () -> Unit,
+        onSuccess: (Expense) -> Unit,
         onError: (String) -> Unit,
         scheduleNotificationService: ScheduleNotificationService
     ) {
         if (validateTitle() && validateAmount() && validatePayments()) {
             viewModelScope.launch {
                 try {
-                    userRepository.saveExpense(
+                    val savedExpense = userRepository.saveExpense(
                         Expense(
                             id = id,
                             title = title.trim(),
@@ -163,7 +163,7 @@ class ExpenseViewModel @Inject constructor(
                             frequency
                         )
                     }
-                    onSuccess()
+                    onSuccess(savedExpense)
                 } catch (e: Exception) {
                     Log.e("ExpenseViewModel", e.message, e)
                     onError(e.message ?: "Unknown error")

@@ -11,7 +11,7 @@ import java.util.Date
 interface GroupRepository {
     suspend fun getGroups(groupIds: Map<String, String>): Map<String, Group>
     suspend fun getGroup(id: String): Group
-    suspend fun saveGroup(group: Group, photoUri: Uri)
+    suspend fun saveGroup(group: Group, photoUri: Uri): Group
     suspend fun uploadPhoto(photoUri: Uri, id: String): String
     suspend fun getPhoto(id: String): String
     suspend fun addUser(groupId: String, userId: String)
@@ -43,19 +43,19 @@ class GroupRepositoryImpl(
         return group.copy(image = if (group.image.isNotEmpty()) getPhoto(id) else "")
     }
 
-    override suspend fun saveGroup(group: Group, photoUri: Uri) {
+    override suspend fun saveGroup(group: Group, photoUri: Uri): Group {
         val id = group.id.ifEmpty { "id${Date().time}" }
         val uid = userRepository.getFirebaseUser()!!.uid
-        group.users[uid] = uid
-        database.getReference("groups/$id").setValue(
-            group.copy(
-                image = if (photoUri != Uri.EMPTY) uploadPhoto(photoUri, id) else group.image,
-                id = id
-            )
-        ).await()
-        group.users.forEach{
+        val savedGroup = group.copy(
+            users = group.users + (uid to uid),
+            image = if (photoUri != Uri.EMPTY) uploadPhoto(photoUri, id) else group.image,
+            id = id
+        )
+        database.getReference("groups/$id").setValue(savedGroup).await()
+        savedGroup.users.forEach {
             userRepository.saveGroup(id, it.key)
         }
+        return savedGroup
     }
 
     override suspend fun uploadPhoto(photoUri: Uri, id: String): String {

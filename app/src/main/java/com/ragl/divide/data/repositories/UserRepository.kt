@@ -30,10 +30,10 @@ interface UserRepository {
     fun signOut()
     suspend fun getExpense(id: String): Expense
     suspend fun getExpenses(): Map<String, Expense>
-    suspend fun saveExpense(expense: Expense)
+    suspend fun saveExpense(expense: Expense): Expense
     suspend fun deleteExpense(id: String)
     suspend fun getExpensePayments(expenseId: String): Map<String, Payment>
-    suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean)
+    suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean): Payment
     suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String)
     suspend fun saveGroup(id: String, userId: String)
     suspend fun leaveGroup(groupId: String, userId: String)
@@ -137,11 +137,12 @@ class UserRepositoryImpl @Inject constructor(
         return expenses
     }
 
-    override suspend fun saveExpense(expense: Expense) {
-        val user = getFirebaseUser() ?: return
+    override suspend fun saveExpense(expense: Expense): Expense {
+        val user = getFirebaseUser() ?: throw Exception("User not signed in")
         val id = expense.id.ifEmpty { "id${Date().time}" }
-        val expensesRef = database.getReference("users/${user.uid}/expenses")
-        expensesRef.child(id).setValue(expense.copy(id = id)).await()
+        val savedExpense = expense.copy(id = id)
+        database.getReference("users/${user.uid}/expenses").child(id).setValue(savedExpense).await()
+        return savedExpense
     }
 
     override suspend fun getExpensePayments(expenseId: String): Map<String, Payment> {
@@ -156,8 +157,8 @@ class UserRepositoryImpl @Inject constructor(
         return payments
     }
 
-    override suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean) {
-        val user = getFirebaseUser() ?: return
+    override suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean): Payment {
+        val user = getFirebaseUser() ?: throw Exception("User not signed in")
         val id = "id${Date().time}"
 
         val amountPaidRef =
@@ -169,11 +170,14 @@ class UserRepositoryImpl @Inject constructor(
         }
         amountPaidRef.setValue(amountPaid).await()
 
+        val savedPayment = payment.copy(id = id)
         val paymentsRef = database.getReference("users/${user.uid}/expenses/$expenseId/payments")
-        paymentsRef.child(id).setValue(payment.copy(id = id)).await()
+        paymentsRef.child(id).setValue(savedPayment).await()
 
         if(expensePaid)
             database.getReference("users/${user.uid}/expenses/$expenseId/paid").setValue(true).await()
+
+        return savedPayment
     }
 
     override suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String) {

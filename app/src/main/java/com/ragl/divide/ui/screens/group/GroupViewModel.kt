@@ -1,6 +1,7 @@
 package com.ragl.divide.ui.screens.group
 
 import android.net.Uri
+import android.system.Os.remove
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,7 +49,7 @@ class GroupViewModel @Inject constructor(
 
     fun addUser(userId: String) {
         _group.update {
-            it.copy(users = it.users.apply { set(userId, userId) })
+            it.copy(users = it.users + (userId to userId))
         }
     }
 
@@ -99,25 +100,24 @@ class GroupViewModel @Inject constructor(
         }
     }
 
-    fun saveGroup(onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun saveGroup(onSuccess: (Group) -> Unit, onError: (String) -> Unit) {
         if (validateName()) {
             _group.update {
-                it.copy(name = it.name.trim(),
-                    users = it.users.apply {
-                        putAll(members.associate { member -> member.uuid to member.uuid }
-                            .filter { member -> member.value !in it.users })
-                    }
+                it.copy(
+                    name = it.name.trim(),
+                    users = it.users + members.associate { member -> member.uuid to member.uuid }
+                        .filter { member -> member.value !in it.users }
                 )
             }
             viewModelScope.launch {
                 try {
                     _isLoading.update { true }
-                    groupRepository.saveGroup(
+                    val savedGroup = groupRepository.saveGroup(
                         _group.value,
                         selectedImageUri
                     )
                     _isLoading.update { false }
-                    onSuccess()
+                    onSuccess(savedGroup)
                 } catch (e: Exception) {
                     Log.e("GroupViewModel", e.message, e)
                     onError(e.message ?: "Unknown error")

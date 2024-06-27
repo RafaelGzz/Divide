@@ -5,11 +5,11 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Scaffold
-import androidx.core.splashscreen.SplashScreen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.splashscreen.SplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -18,16 +18,17 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.Payment
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.screens.home.HomeScreen
-import com.ragl.divide.ui.screens.signIn.LogInScreen
-import com.ragl.divide.ui.screens.signIn.SignInViewModel
 import com.ragl.divide.ui.screens.addFriends.AddFriendsScreen
 import com.ragl.divide.ui.screens.expense.ExpenseScreen
 import com.ragl.divide.ui.screens.expenseDetails.ExpenseDetailsScreen
 import com.ragl.divide.ui.screens.group.GroupScreen
 import com.ragl.divide.ui.screens.groupDetails.GroupDetailsScreen
 import com.ragl.divide.ui.screens.groupExpense.GroupExpenseScreen
+import com.ragl.divide.ui.screens.home.HomeScreen
+import com.ragl.divide.ui.screens.signIn.LogInScreen
+import com.ragl.divide.ui.screens.signIn.SignInViewModel
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -96,34 +97,36 @@ fun DivideApp(
             val isUpdate = args.expenseId.isNotEmpty()
             ExpenseScreen(
                 onBackClick = { navController.navigateUp() },
-                expense = if(isUpdate) user.expenses[args.expenseId]!! else Expense(),
+                expense = if (isUpdate) user.expenses[args.expenseId]!! else Expense(),
                 isUpdate = isUpdate,
-                onSaveExpense = {
-                    if (isUpdate) {
-                        userViewModel.getUserData()
-                        navController.navTo(
-                            Screen.Home,
-                            pop = true,
-                            incl = true
-                        )
-                    } else {
-                        navController.navTo(
-                            Screen.ExpenseDetails(expenseId = args.expenseId),
-                            pop = true,
-                            incl = true
-                        )
-                    }
+                onSaveExpense = { savedExpense ->
+                    userViewModel.saveExpense(savedExpense)
+                    navController.navTo(
+                        Screen.ExpenseDetails(expenseId = savedExpense.id),
+                        pop = true,
+                        incl = true
+                    )
                 },
             )
         }
         composable<Screen.ExpenseDetails> {
             val args: Screen.ExpenseDetails = it.toRoute()
+            var expense = user.expenses[args.expenseId]
             ExpenseDetailsScreen(
-                expense = user.expenses[args.expenseId]!!,
+                expense = expense ?: Expense(),
                 editExpense = { id -> navController.navTo(Screen.Expense(expenseId = id)) },
-                onBackClick = { navController.navigateUp() },
+                onBackClick = {
+                    navController.navTo(
+                        Screen.Home,
+                        pop = true,
+                        incl = true
+                    )
+                },
+                onPaymentMade = { payment: Payment ->
+                    userViewModel.savePayment(expense!!.id, payment)
+                },
                 onDeleteExpense = {
-                    userViewModel.getUserData()
+                    userViewModel.removeExpense(args.expenseId)
                     navController.navTo(
                         Screen.Home,
                         pop = true,
@@ -131,7 +134,8 @@ fun DivideApp(
                     )
                 },
                 onPaidExpense = {
-                    userViewModel.getUserData()
+                    expense = Expense()
+                    userViewModel.paidExpense(args.expenseId)
                     navController.navTo(
                         Screen.Home,
                         pop = true,
@@ -145,16 +149,24 @@ fun DivideApp(
             val isUpdate = args.groupId.isNotEmpty()
             GroupScreen(
                 friends = user.friends.values.toList(),
-                group = if(isUpdate) user.groups[args.groupId] ?: Group() else Group(),
+                group = if (isUpdate) user.groups[args.groupId] ?: Group() else Group(),
                 isUpdate = isUpdate,
                 onBackClick = { navController.navigateUp() },
                 onDeleteGroup = {
-                    userViewModel.getUserData()
-                    navController.navTo(Screen.Home, true)
+                    userViewModel.removeGroup(args.groupId)
+                    navController.navTo(
+                        Screen.Home,
+                        pop = true,
+                        incl = true
+                    )
                 },
-                onAddGroup = {
-                    userViewModel.getUserData()
-                    navController.navTo(Screen.Home, true)
+                onSaveGroup = { group ->
+                    userViewModel.addGroup(group)
+                    navController.navTo(
+                        Screen.GroupDetails(groupId = group.id),
+                        pop = true,
+                        incl = true
+                    )
                 }
             )
         }
@@ -176,8 +188,10 @@ fun DivideApp(
         composable<Screen.AddFriends> {
             AddFriendsScreen(
                 friends = user.friends.values.toList(),
+                onFriendAdded = {
+                    userViewModel.addFriend(it)
+                },
                 onBackClick = {
-                    userViewModel.getUserData()
                     navController.navigateUp()
                 }
             )

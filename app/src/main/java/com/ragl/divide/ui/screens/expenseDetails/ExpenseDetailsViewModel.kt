@@ -66,14 +66,15 @@ class ExpenseDetailsViewModel @Inject constructor(
         }
     }
 
-    fun addPayment(amount: Double, onFailure: (String) -> Unit, onPaidExpense: () -> Unit) {
+    fun addPayment(amount: Double, onSuccess: (Payment) -> Unit, onFailure: (String) -> Unit, onPaidExpense: () -> Unit) {
         viewModelScope.launch {
             try {
-                userRepository.saveExpensePayment(
+                val savedPayment = userRepository.saveExpensePayment(
                     Payment(amount = amount),
                     expenseId = _expense.value.id,
                     expensePaid = _expense.value.amountPaid + amount == _expense.value.amount
                 )
+                onSuccess(savedPayment)
                 if (_expense.value.amountPaid + amount == _expense.value.amount) onPaidExpense()
                 else _expense.update {
                     it.copy(

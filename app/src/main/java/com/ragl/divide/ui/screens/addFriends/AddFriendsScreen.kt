@@ -29,7 +29,7 @@ import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.data.models.User
-import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.DivideTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,9 +50,12 @@ import com.ragl.divide.ui.utils.DivideTextField
 fun AddFriendsScreen(
     vm: AddFriendsViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
+    onFriendAdded: (User) -> Unit,
     friends: List<User>
 ) {
-
+    LaunchedEffect(Unit) {
+        vm.setCurrentFriends(friends)
+    }
     var showAddFriendDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -82,7 +84,7 @@ fun AddFriendsScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         showAddFriendDialog = false
-                        vm.addFriend(onBackClick)
+                        vm.addFriend(onFriendAdded)
                     }) {
                         Text(stringResource(R.string.add))
                     }
@@ -111,11 +113,11 @@ fun AddFriendsScreen(
                     input = vm.searchText,
                     onValueChange = vm::updateSearchText,
                     imeAction = ImeAction.Done,
-                    onAction = { vm.searchUser(friends) },
+                    onAction = vm::searchUser,
                     modifier = Modifier.weight(1f)
                 )
                 Button(
-                    onClick = { vm.searchUser(friends) },
+                    onClick = vm::searchUser,
                     modifier = Modifier
                         .wrapContentSize()
                         .height(55.dp),

@@ -5,5 +5,5 @@ data class Group(
     val name: String = "",
     val image: String = "",
     val expenses: Map<String, Expense> = emptyMap(),
-    val users: MutableMap<String, String> = mutableMapOf(),
+    val users: Map<String, String> = emptyMap(),
 )

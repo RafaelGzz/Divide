@@ -30,6 +30,13 @@ class AddFriendsViewModel @Inject constructor(
     var selectedUser by mutableStateOf<User?>(null)
         private set
 
+    private var friends by mutableStateOf(emptyList<User>())
+        private set
+
+    fun setCurrentFriends(friends: List<User>) {
+        this.friends = friends
+    }
+
     fun updateSelectedUser(user: User) {
         selectedUser = user
     }
@@ -38,7 +45,7 @@ class AddFriendsViewModel @Inject constructor(
         searchText = text
     }
 
-    fun searchUser(friends: List<User>) {
+    fun searchUser() {
         if (searchText.isEmpty()) {
             users = emptyMap()
             return
@@ -50,11 +57,13 @@ class AddFriendsViewModel @Inject constructor(
         }
     }
 
-    fun addFriend(onSuccess: () -> Unit) {
+    fun addFriend(onFriendAdded: (User) -> Unit) {
         viewModelScope.launch {
             try {
                 repository.addFriend(selectedUser!!)
-                onSuccess()
+                setCurrentFriends(friends + selectedUser!!)
+                searchUser()
+                onFriendAdded(selectedUser!!)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
