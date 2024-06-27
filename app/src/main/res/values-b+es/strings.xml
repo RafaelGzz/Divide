@@ -90,4 +90,5 @@
     <string name="leave">Salir</string>
     <string name="configuration">Configuración</string>
     <string name="add_friends_to_group">Añadir amigos al grupo</string>
+    <string name="search">Buscar</string>
 </resources>

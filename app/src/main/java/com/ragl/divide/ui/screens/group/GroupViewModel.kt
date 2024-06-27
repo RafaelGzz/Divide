@@ -25,7 +25,7 @@ class GroupViewModel @Inject constructor(
     private var _group = MutableStateFlow(Group())
     var group = _group.asStateFlow()
 
-    var members by mutableStateOf<List<User>>(emptyList())
+    var members by mutableStateOf<List<User>>(listOf())
         private set
 
     var selectedImageUri by mutableStateOf<Uri>(Uri.EMPTY)
@@ -52,6 +52,10 @@ class GroupViewModel @Inject constructor(
         }
     }
 
+    fun addMember(member: User) {
+        this.members += member
+    }
+
     fun removeUser(userId: String) {
         _group.update {
             it.copy(users = it.users.apply { remove(userId) })
@@ -64,7 +68,7 @@ class GroupViewModel @Inject constructor(
             _group.update {
                 group
             }
-            members = groupRepository.getUsers(_group.value.users.values.toList())
+            members = groupRepository.getUsers(_group.value.users.values.toList()).toMutableList()
             _isLoading.update { false }
         }
     }
@@ -98,7 +102,12 @@ class GroupViewModel @Inject constructor(
     fun saveGroup(onSuccess: () -> Unit, onError: (String) -> Unit) {
         if (validateName()) {
             _group.update {
-                it.copy(name = it.name.trim())
+                it.copy(name = it.name.trim(),
+                    users = it.users.apply {
+                        putAll(members.associate { member -> member.uuid to member.uuid }
+                            .filter { member -> member.value !in it.users })
+                    }
+                )
             }
             viewModelScope.launch {
                 try {
@@ -120,10 +129,12 @@ class GroupViewModel @Inject constructor(
     fun deleteGroup(onDelete: () -> Unit) {
         viewModelScope.launch {
             try {
+                _isLoading.update { true }
                 groupRepository.deleteGroup(
                     _group.value.id,
                     if (_group.value.image.isNotEmpty()) _group.value.id else ""
                 )
+                _isLoading.update { false }
                 onDelete()
             } catch (e: Exception) {
                 Log.e("GroupDetailsViewModel", e.message, e)
