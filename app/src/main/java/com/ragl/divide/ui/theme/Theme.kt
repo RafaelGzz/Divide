@@ -14,7 +14,11 @@ private val lightScheme = lightColorScheme(
     background = backgroundLight,
     onBackground = onBackgroundLight,
     surface = surfaceLight,
-    onSurface = onSurfaceLight
+    onSurface = onSurfaceLight,
+    error = errorLight,
+    onError = onErrorLight,
+    errorContainer = errorContainerLight,
+    onErrorContainer = onErrorContainerLight
 )
 
 private val darkScheme = darkColorScheme(
@@ -25,7 +29,11 @@ private val darkScheme = darkColorScheme(
     background = backgroundDark,
     onBackground = onBackgroundDark,
     surface = surfaceDark,
-    onSurface = onSurfaceDark
+    onSurface = onSurfaceDark,
+    error = errorDark,
+    onError = onErrorDark,
+    errorContainer = errorContainerDark,
+    onErrorContainer = onErrorContainerDark
 )
 
 @Composable

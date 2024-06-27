@@ -43,11 +43,11 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -148,6 +148,7 @@ fun GroupScreen(
                         title = {
                             Text(stringResource(if (!isUpdate) R.string.add_group else R.string.update_group))
                         },
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(titleContentColor = MaterialTheme.colorScheme.primary),
                         navigationIcon = {
                             IconButton(
                                 onClick = onBackClick
@@ -367,11 +368,11 @@ fun GroupScreen(
                                 },
                                 shape = ShapeDefaults.Medium,
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.errorContainer
+                                    contentColor = MaterialTheme.colorScheme.primary
                                 ),
                                 border = BorderStroke(
-                                    1.dp,
-                                    MaterialTheme.colorScheme.errorContainer
+                                    2.dp,
+                                    MaterialTheme.colorScheme.primary
                                 ),
                                 modifier = Modifier
                                     .padding(top = 8.dp)
@@ -396,8 +397,8 @@ fun GroupScreen(
                             },
                             shape = ShapeDefaults.Medium,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.primary
                             ),
                             modifier = Modifier
                                 .padding(top = 8.dp, bottom = 16.dp)
@@ -484,6 +485,7 @@ fun FriendSelectionScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Select Friends") },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(titleContentColor = MaterialTheme.colorScheme.primary),
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -527,11 +529,7 @@ fun FriendSelectionScreen(
                     val isSelected = selectedFriends.contains(friend.uuid)
                     val isFriendInGroup = members.containsKey(friend.uuid)
                     val friendItemColors = if (isFriendInGroup) {
-                        // Colors to make it look disabled
-                        CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant, // Or any other suitable color
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) // Reduce content opacity
-                        )
+                        defaultColors
                     } else if (isSelected) {
                         selectedColors
                     } else {
@@ -543,6 +541,7 @@ fun FriendSelectionScreen(
                         photoUrl = friend.photoUrl,
                         colors = friendItemColors,
                         onClick = { if (!isFriendInGroup) onFriendClick(friend.uuid) },
+                        enabled = !isFriendInGroup
                     )
                 }
             }

@@ -201,6 +201,7 @@ fun FriendItem(
     headline: String,
     supporting: String = "",
     photoUrl: String = "",
+    enabled: Boolean = true,
     colors: CardColors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -232,7 +233,7 @@ fun FriendItem(
             headlineContent = {
                 Text(
                     text = headline,
-                    color = MaterialTheme.colorScheme.primary
+                    color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                 )
             },
             supportingContent = supportingContent,
@@ -244,6 +245,7 @@ fun FriendItem(
                             .crossfade(true)
                             .build(),
                         contentDescription = null,
+                        alpha = if (enabled) 1f else 0.5f,
                         modifier = Modifier
                             .size(52.dp)
                             .clip(CircleShape)
@@ -252,12 +254,12 @@ fun FriendItem(
                     Icon(
                         icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
+                        tint = if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
                         modifier = Modifier
                             .padding(vertical = if (supporting.isNotEmpty()) 0.dp else 2.dp)
                             .clip(CircleShape)
                             .size(52.dp)
-                            .background(MaterialTheme.colorScheme.primary)
+                            .background(if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
                             .padding(12.dp)
                     )
                 }
