@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -196,42 +197,50 @@ fun Context.createImageFile(): File {
 
 @Composable
 fun FriendItem(
-    friend: User,
+    modifier: Modifier = Modifier,
+    headline: String,
+    supporting: String = "",
+    photoUrl: String = "",
     colors: CardColors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
     ),
+    icon: ImageVector = Icons.Filled.Person,
     onClick: (() -> Unit)? = null
 ) {
     val interactionSource by remember { mutableStateOf(MutableInteractionSource()) }
+    val supportingContent: @Composable (() -> Unit)? = if (supporting.isNotEmpty()) {
+        @Composable { Text(text = supporting) }
+    } else {
+        null
+    }
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(CardDefaults.shape)
+        modifier = modifier
             .clickable(interactionSource = interactionSource, indication = null){
                 if (onClick != null) {
                     onClick()
                 }
             },
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = colors
     ) {
         ListItem(
+            modifier = Modifier.padding(vertical = 4.dp),
             colors = ListItemDefaults.colors(
                 containerColor = Color.Transparent,
             ),
             headlineContent = {
                 Text(
-                    text = friend.name,
+                    text = headline,
                     color = MaterialTheme.colorScheme.primary
                 )
             },
-            supportingContent = { Text(text = friend.email) },
+            supportingContent = supportingContent,
             leadingContent = {
-                if (friend.photoUrl.isNotEmpty()) {
+                if (photoUrl.isNotEmpty()) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(friend.photoUrl)
+                            .data(photoUrl)
                             .crossfade(true)
                             .build(),
                         contentDescription = null,
@@ -241,17 +250,18 @@ fun FriendItem(
                     )
                 } else {
                     Icon(
-                        Icons.Filled.Person,
+                        icon,
                         contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
+                            .padding(vertical = if (supporting.isNotEmpty()) 0.dp else 2.dp)
                             .clip(CircleShape)
                             .size(52.dp)
                             .background(MaterialTheme.colorScheme.primary)
                             .padding(12.dp)
                     )
                 }
-            },
-            modifier = Modifier.padding(vertical = 4.dp)
+            }
         )
     }
 }

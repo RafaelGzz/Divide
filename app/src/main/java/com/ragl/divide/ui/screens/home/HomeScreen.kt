@@ -214,9 +214,11 @@ fun FriendsBody(
                     }
                 }
                 items(friends, key = { it.uuid }) { friend ->
-                    FriendItem(friend) {
-
-                    }
+                    FriendItem(
+                        headline = friend.name,
+                        supporting = friend.email,
+                        photoUrl = friend.photoUrl
+                    )
                 }
             }
         }

@@ -73,6 +73,7 @@ class GroupViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 groupRepository.leaveGroup(_group.value.id)
+                onSuccessful()
             } catch (e: Exception) {
                 Log.e("GroupDetailsViewModel", e.message, e)
                 onError(e.message ?: "An error occurred")

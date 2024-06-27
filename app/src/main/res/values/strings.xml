@@ -69,7 +69,7 @@
     <string name="congratulations">Congratulations</string>
     <string name="you_have_paid_your_expense_completely">You have paid your expense completely!</string>
     <string name="add_group">Add Group</string>
-    <string name="update_group">Update Group</string>
+    <string name="update_group">Group Details</string>
     <string name="name">Name</string>
     <string name="group_expenses">Group expenses</string>
     <string name="group_no_expenses">There are no expenses</string>
@@ -89,4 +89,5 @@
     <string name="leave_group_message">Are you sure you want to leave this Group?</string>
     <string name="leave">Leave</string>
     <string name="configuration">Configuration</string>
+    <string name="add_friends_to_group">Add friends to your group</string>
 </resources>
