@@ -176,12 +176,15 @@ fun DivideApp(
                 group = user.groups[args.groupId]!!,
                 editGroup = { id -> navController.navTo(Screen.Group(groupId = id)) },
                 onBackClick = { navController.navigateUp() },
-                onAddExpenseClick = { navController.navTo(Screen.GroupExpense) }
+                onAddExpenseClick = { navController.navTo(Screen.GroupExpense(args.groupId)) }
             )
         }
         composable<Screen.GroupExpense> {
+            val args: Screen.GroupExpense = it.toRoute()
             GroupExpenseScreen(
                 onBackClick = { navController.navigateUp() },
+                group = user.groups[args.groupId]!!,
+                userId = user.user.uuid,
                 onSaveExpense = {}
             )
         }

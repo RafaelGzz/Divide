@@ -20,7 +20,7 @@ sealed class Screen(val route: String) {
     @Serializable
     data class GroupDetails(val groupId: String = "") : Screen("GroupDetails")
     @Serializable
-    data object GroupExpense : Screen("GroupExpense")
+    data class GroupExpense(val groupId: String = "") : Screen("GroupExpense")
     @Serializable
     data class GroupExpenseDetails(val expenseId: String = "") : Screen("GroupExpenseDetails")
     @Serializable

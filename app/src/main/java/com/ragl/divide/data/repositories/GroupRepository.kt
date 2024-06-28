@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.User
 import kotlinx.coroutines.tasks.await
 import java.util.Date
@@ -18,6 +19,7 @@ interface GroupRepository {
     suspend fun getUsers(userIds: List<String>): List<User>
     suspend fun leaveGroup(groupId: String)
     suspend fun deleteGroup(groupId: String, image: String)
+    suspend fun saveExpense(groupId: String, expense: GroupExpense): GroupExpense
 }
 
 class GroupRepositoryImpl(
@@ -101,5 +103,12 @@ class GroupRepositoryImpl(
             userRepository.leaveGroup(groupId, it)
         }
         groupRef.removeValue().await()
+    }
+
+    override suspend fun saveExpense(groupId: String, expense: GroupExpense): GroupExpense {
+        val id = expense.id.ifEmpty { "id${Date().time}" }
+        val savedExpense = expense.copy(id = id)
+        database.getReference("groups/$groupId/expenses").child(id).setValue(savedExpense).await()
+        return savedExpense
     }
 }

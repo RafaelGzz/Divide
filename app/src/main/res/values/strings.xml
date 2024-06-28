@@ -91,4 +91,6 @@
     <string name="configuration">Configuration</string>
     <string name="add_friends_to_group">Add friends to your group</string>
     <string name="search">Search</string>
+    <string name="paid_by">Paid by</string>
+    <string name="divided_by">Divided by</string>
 </resources>

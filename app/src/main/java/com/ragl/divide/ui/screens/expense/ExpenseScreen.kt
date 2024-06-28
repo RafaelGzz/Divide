@@ -136,7 +136,6 @@ fun ExpenseScreen(
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
-
         }
     ) { paddingValues ->
         Column(
@@ -198,7 +197,7 @@ fun ExpenseScreen(
                         label = stringResource(R.string.title),
                         input = vm.title,
                         error = vm.titleError,
-                        onValueChange = { vm.updateTitle(it) },
+                        onValueChange = vm::updateTitle,
                         modifier = Modifier.weight(.55f)
                     )
                     Column(
@@ -296,7 +295,7 @@ fun ExpenseScreen(
                 DivideTextField(
                     label = stringResource(R.string.notes),
                     input = vm.notes,
-                    onValueChange = { vm.updateNotes(it) },
+                    onValueChange = vm::updateNotes,
                     imeAction = ImeAction.Default,
                     singleLine = false,
                     errorText = false,

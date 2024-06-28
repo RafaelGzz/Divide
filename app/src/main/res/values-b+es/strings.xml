@@ -91,4 +91,6 @@
     <string name="configuration">Configuración</string>
     <string name="add_friends_to_group">Añadir amigos al grupo</string>
     <string name="search">Buscar</string>
+    <string name="paid_by">Pagado por</string>
+    <string name="divided_by">Dividido por</string>
 </resources>

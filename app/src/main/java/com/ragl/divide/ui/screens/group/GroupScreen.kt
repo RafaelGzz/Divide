@@ -337,13 +337,6 @@ fun GroupScreen(
                             }
                         }
                     else {
-                        FriendItem(
-                            modifier = Modifier
-                                .padding(vertical = 4.dp),
-                            headline = stringResource(R.string.add_friends_to_group),
-                            icon = Icons.Filled.GroupAdd,
-                            onClick = { showFriendSelection = true }
-                        )
                         vm.members.forEach { member ->
                             FriendItem(
                                 modifier = Modifier.padding(vertical = 4.dp),
@@ -353,6 +346,14 @@ fun GroupScreen(
                                 colors = selectedColors
                             )
                         }
+                        FriendItem(
+                            modifier = Modifier
+                                .padding(vertical = 4.dp),
+                            headline = stringResource(R.string.add_friends_to_group),
+                            colors = defaultColors,
+                            icon = Icons.Filled.GroupAdd,
+                            onClick = { showFriendSelection = true }
+                        )
                         Text(
                             text = stringResource(R.string.configuration),
                             style = MaterialTheme.typography.bodySmall,
