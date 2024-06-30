@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.expenseDetails
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,6 +68,11 @@ fun ExpenseDetailsScreen(
     onDeleteExpense: () -> Unit,
     onPaidExpense: () -> Unit,
 ) {
+
+    BackHandler {
+        onBackClick()
+    }
+
 
     LaunchedEffect(Unit) {
         expenseDetailsViewModel.setExpense(expense)

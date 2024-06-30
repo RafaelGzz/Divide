@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.expense
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -80,6 +81,11 @@ fun ExpenseScreen(
             vm.setViewModelExpense(expense)
         }
     }
+
+    BackHandler {
+        onBackClick()
+    }
+
 
     var categoryMenuExpanded by remember { mutableStateOf(false) }
     var frequencyMenuExpanded by remember { mutableStateOf(false) }

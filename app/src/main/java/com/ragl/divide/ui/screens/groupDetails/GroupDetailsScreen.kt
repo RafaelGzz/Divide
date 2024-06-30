@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.groupDetails
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,9 +19,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -53,9 +57,9 @@ import coil.request.ImageRequest
 import com.ragl.divide.R
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupExpense
+import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.getCategoryIcon
-import com.ragl.divide.ui.screens.home.TitleRow
 import com.ragl.divide.ui.theme.AppTypography
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -72,7 +76,9 @@ fun GroupDetailsScreen(
     onBackClick: () -> Unit,
     onAddExpenseClick: () -> Unit,
 ) {
-
+    BackHandler {
+        onBackClick()
+    }
     LaunchedEffect(Unit) {
         groupDetailsViewModel.setGroup(group, userId, members)
     }
@@ -92,7 +98,25 @@ fun GroupDetailsScreen(
                         editGroup(groupState.id)
                     }
                 )
-        }, modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                text = {
+                    Text(
+                        stringResource(R.string.add_expense),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
+                icon = { Icon(Icons.Filled.AttachMoney, contentDescription = null) },
+                onClick = onAddExpenseClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                elevation = FloatingActionButtonDefaults.elevation(0.dp),
+                modifier = Modifier
+                    .padding(vertical = 8.dp)
+            )
+        },
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) { paddingValues ->
         if (!isLoading) {
             Column(
@@ -101,14 +125,6 @@ fun GroupDetailsScreen(
                     .padding(horizontal = 16.dp)
                     .fillMaxSize()
             ) {
-                TitleRow(
-                    buttonStringResource = R.string.add_expense,
-                    labelStringResource = R.string.group_expenses,
-                    onAddClick = onAddExpenseClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp, bottom = 8.dp)
-                )
                 if (groupState.expenses.isEmpty()) {
                     Text(
                         text = stringResource(R.string.group_no_expenses),
@@ -118,9 +134,10 @@ fun GroupDetailsScreen(
                     )
                 }
                 ExpenseListView(
-                    expenses = groupState.expenses,
+                    expensesAndPayments = groupDetailsViewModel.expensesAndPayments,
                     modifier = Modifier.weight(1f),
-                    getPaidByNames = groupDetailsViewModel::getPaidByNames
+                    getPaidByNames = groupDetailsViewModel::getPaidByNames,
+                    members = members
                 )
             }
         } else {
@@ -137,11 +154,28 @@ fun GroupDetailsScreen(
 @Composable
 private fun ExpenseListView(
     modifier: Modifier = Modifier,
-    expenses: Map<String, GroupExpense>,
-    getPaidByNames: (List<String>) -> String
+    expensesAndPayments: List<Any>,
+    getPaidByNames: (List<String>) -> String,
+    members: List<User>
 ) {
-    val expensesByMonth = expenses.values.groupBy {
-        SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(it.addedDate)
+    val expensesByMonth = expensesAndPayments.groupBy {
+        when (it) {
+            is GroupExpense -> {
+                SimpleDateFormat(
+                    "MMMM yyyy",
+                    Locale.getDefault()
+                ).format(it.addedDate)
+            }
+
+            is Payment -> {
+                SimpleDateFormat(
+                    "MMMM yyyy",
+                    Locale.getDefault()
+                ).format(it.date)
+            }
+
+            else -> ""
+        }
     }
 
     LazyColumn(
@@ -151,8 +185,9 @@ private fun ExpenseListView(
         items(expensesByMonth.keys.toList().sortedDescending()) { month ->
             MonthSection(
                 month = month,
-                expenses = expensesByMonth[month] ?: emptyList(),
-                getPaidByNames = getPaidByNames
+                expensesAndPayments = expensesByMonth[month] ?: emptyList(),
+                getPaidByNames = getPaidByNames,
+                members = members
             )
         }
     }
@@ -161,8 +196,9 @@ private fun ExpenseListView(
 @Composable
 private fun MonthSection(
     month: String,
-    expenses: List<GroupExpense>,
-    getPaidByNames: (List<String>) -> String
+    expensesAndPayments: List<Any>,
+    getPaidByNames: (List<String>) -> String,
+    members: List<User>
 ) {
     Column {
         Text(
@@ -171,19 +207,39 @@ private fun MonthSection(
             modifier = Modifier.padding(8.dp)
         )
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            for (expense in expenses.sortedByDescending { it.addedDate }) {
-                GroupExpenseItem(expense = expense, getPaidByNames = getPaidByNames)
+            for (expense in expensesAndPayments.sortedByDescending {
+                when (it) {
+                    is GroupExpense -> it.addedDate
+                    is Payment -> it.date
+                    else -> null
+                }
+            }) {
+                GroupExpenseItem(
+                    expenseOrPayment = expense,
+                    getPaidByNames = getPaidByNames,
+                    members = members
+                )
             }
         }
     }
 }
 
 @Composable
-private fun GroupExpenseItem(expense: GroupExpense, getPaidByNames: (List<String>) -> String) {
+private fun GroupExpenseItem(
+    expenseOrPayment: Any,
+    getPaidByNames: (List<String>) -> String,
+    members: List<User>
+) {
     val dateFormatter = SimpleDateFormat("MMM\ndd", Locale.getDefault())
-    val formattedDate = dateFormatter.format(expense.addedDate)
+    val formattedDate = dateFormatter.format(
+        when (expenseOrPayment) {
+            is GroupExpense -> expenseOrPayment.addedDate
+            is Payment -> expenseOrPayment.date
+            else -> null
+        }
+    )
     Row(
         modifier = Modifier
             .height(80.dp)
@@ -195,55 +251,80 @@ private fun GroupExpenseItem(expense: GroupExpense, getPaidByNames: (List<String
     ) {
         Text(
             formattedDate,
-            style = AppTypography.titleSmall.copy(
+            style = AppTypography.bodySmall.copy(
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 textAlign = TextAlign.Center
             ),
-            modifier = Modifier.padding(start = 20.dp)
+            modifier = Modifier.padding(start = 16.dp)
         )
         Icon(
-            getCategoryIcon(expense.category),
-            contentDescription = "Icon representing ${expense.category} category",
+            if (expenseOrPayment is GroupExpense) getCategoryIcon(expenseOrPayment.category) else Icons.Filled.AttachMoney,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            contentDescription = null,
             modifier = Modifier.padding(start = 12.dp)
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(1f)
+                .padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(1f)
-                    .padding(start = 12.dp), verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = expense.title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Normal
-                    ),
-                    softWrap = true,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1
-                )
-                Text(
-                    text = stringResource(R.string.paid_by) + " " + getPaidByNames(expense.paidBy.values.toList()),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+            when (expenseOrPayment) {
+                is GroupExpense -> {
+                    Text(
+                        text = expenseOrPayment.title,
+                        maxLines = 1,
+                        softWrap = true,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Normal
+                        ),
                     )
-                )
+                    Text(
+                        text = stringResource(R.string.paid_by) + " " + getPaidByNames(
+                            expenseOrPayment.paidBy.values.toList()
+                        ),
+                        maxLines = 1,
+                        softWrap = true,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                            fontWeight = FontWeight.Normal
+                        ),
+                    )
+                }
+
+                is Payment -> {
+                    Text(
+                        "${members.find { it.uuid == expenseOrPayment.paidBy }?.name} paid ${members.find { it.uuid == expenseOrPayment.paidTo }?.name}",
+                        softWrap = true,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Normal
+                        ),
+                    )
+                }
             }
-            Text(
-                text = NumberFormat.getCurrencyInstance().format(expense.amount),
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Normal
-                ),
-                softWrap = true,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 1,
-                modifier = Modifier.padding(end = 20.dp)
-            )
         }
+        Text(
+            text = NumberFormat.getCurrencyInstance().format(
+                when (expenseOrPayment) {
+                    is GroupExpense -> expenseOrPayment.amount
+                    is Payment -> expenseOrPayment.amount
+                    else -> 0
+                }
+            ),
+            style = MaterialTheme.typography.bodySmall.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Normal
+            ),
+            softWrap = true,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 1,
+            modifier = Modifier.padding(end = 20.dp)
+        )
     }
 }
 

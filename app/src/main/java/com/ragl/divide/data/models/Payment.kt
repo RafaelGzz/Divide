@@ -4,5 +4,6 @@ data class Payment(
     val id: String = "",
     val amount: Double = 0.0,
     val date: Long = Date().time,
-    val paidBy: String = ""
+    val paidBy: String = "",
+    val paidTo: String = "",
 )

@@ -3,6 +3,7 @@ package com.ragl.divide.ui.screens.group
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -91,6 +91,11 @@ fun GroupScreen(
     onDeleteGroup: () -> Unit,
     onSaveGroup: (Group) -> Unit,
 ) {
+
+    BackHandler {
+        onBackClick()
+    }
+
     LaunchedEffect(Unit) {
         if (isUpdate) {
             vm.setGroup(group, members)
@@ -310,32 +315,24 @@ fun GroupScreen(
                             .padding(vertical = 8.dp)
                             .wrapContentHeight()
                     )
-                    val height = if (isUpdate) 320.dp else 200.dp
                     if (!isUpdate)
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(height)
-                        ) {
-                            items(friends, key = { it.uuid }) { friend ->
-                                val isSelected = selectedFriends.contains(friend.uuid)
-                                FriendItem(
-                                    headline = friend.name,
-                                    supporting = friend.email,
-                                    photoUrl = friend.photoUrl,
-                                    colors = if (isSelected) selectedColors else defaultColors,
-                                    onClick = {
-                                        if (isSelected) {
-                                            vm.removeUser(friend.uuid)
-                                            selectedFriends.remove(friend.uuid)
-                                        } else {
-                                            vm.addUser(friend.uuid)
-                                            selectedFriends.add(friend.uuid)
-                                        }
+                        friends.forEach { friend ->
+                            val isSelected = selectedFriends.contains(friend.uuid)
+                            FriendItem(
+                                headline = friend.name,
+                                supporting = friend.email,
+                                photoUrl = friend.photoUrl,
+                                colors = if (isSelected) selectedColors else defaultColors,
+                                onClick = {
+                                    if (isSelected) {
+                                        vm.removeUser(friend.uuid)
+                                        selectedFriends.remove(friend.uuid)
+                                    } else {
+                                        vm.addUser(friend.uuid)
+                                        selectedFriends.add(friend.uuid)
                                     }
-                                )
-                            }
+                                }
+                            )
                         }
                     else {
                         vm.members.forEach { member ->

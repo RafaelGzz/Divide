@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.addFriends
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,11 @@ fun AddFriendsScreen(
     onFriendAdded: (User) -> Unit,
     friends: List<User>
 ) {
+
+    BackHandler {
+        onBackClick()
+    }
+
     LaunchedEffect(Unit) {
         vm.setCurrentFriends(friends)
     }

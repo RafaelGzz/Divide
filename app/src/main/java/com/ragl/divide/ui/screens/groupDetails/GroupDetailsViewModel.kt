@@ -26,6 +26,13 @@ class GroupDetailsViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
+    var expensesAndPayments by mutableStateOf<List<Any>>(listOf())
+        private set
+
+    private fun updateExpensesAndPayments(expensesAndPayments: List<Any>) {
+        this.expensesAndPayments = expensesAndPayments
+    }
+
     var members by mutableStateOf<List<User>>(listOf())
         private set
 
@@ -42,6 +49,7 @@ class GroupDetailsViewModel @Inject constructor(
             }
             updateUserId(userId)
             updateMembers(members)
+            updateExpensesAndPayments(group.expenses.values.toList() + group.payments.values.toList())
             _isLoading.update {
                 false
             }

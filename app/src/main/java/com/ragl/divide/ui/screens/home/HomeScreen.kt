@@ -16,15 +16,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.People
@@ -63,7 +62,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ragl.divide.R
@@ -112,6 +110,19 @@ fun HomeScreen(
     }
 
     Scaffold(
+        topBar = {
+            TopBar(
+                user = user.user,
+                onTapUserImage = { vm.signOut { onSignOut() } },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    //.padding(horizontal = 16.dp)
+                    //.clip(ShapeDefaults.Medium)
+                    //.background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                    .statusBarsPadding()
+            )
+        },
         bottomBar = {
             if (!user.isLoading)
                 BottomBar(
@@ -121,6 +132,20 @@ fun HomeScreen(
                         selectedTabIndex = it
                     }
                 )
+        },
+        floatingActionButton = {
+            if (selectedTabIndex == 1) {
+                ExtendedFloatingActionButton(
+                    text = { Text(stringResource(R.string.add_friends)) },
+                    icon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                    onClick = onAddFriendsClick,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    elevation = FloatingActionButtonDefaults.elevation(0.dp),
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -142,17 +167,7 @@ fun HomeScreen(
                         )
                     }
                 ) {
-                    Column {
-                        TopBar(
-                            user = user.user,
-                            onTapUserImage = { vm.signOut { onSignOut() } },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                //.padding(horizontal = 16.dp)
-                                //.clip(ShapeDefaults.Medium)
-                                //.background(MaterialTheme.colorScheme.primaryContainer)
-                                .padding(vertical = 16.dp, horizontal = 16.dp)
-                        )
+                    Column(modifier = Modifier.fillMaxSize()) {
                         when (selectedTabIndex) {
                             0 -> HomeBody(
                                 expenses = expenses,
@@ -160,13 +175,11 @@ fun HomeScreen(
                                 onAddExpenseClick = onAddExpenseClick,
                                 onAddGroupClick = onAddGroupClick,
                                 onExpenseClick = onExpenseClick,
-                                onGroupClick = onGroupClick,
-                                modifier = Modifier.verticalScroll(rememberScrollState())
+                                onGroupClick = onGroupClick
                             )
 
                             1 -> FriendsBody(
-                                friends = friends,
-                                onAddFriendsClick = onAddFriendsClick
+                                friends = friends
                             )
                         }
                     }
@@ -186,59 +199,47 @@ fun HomeScreen(
 
 @Composable
 fun FriendsBody(
-    friends: List<User>,
-    onAddFriendsClick: () -> Unit
+    friends: List<User>
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        Column {
-            Text(
-                text = stringResource(R.string.your_friends),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 26.dp)
-            )
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (friends.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.you_have_no_friends),
-                            style = AppTypography.labelSmall,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-                items(friends, key = { it.uuid }) { friend ->
-                    FriendItem(
-                        headline = friend.name,
-                        supporting = friend.email,
-                        photoUrl = friend.photoUrl
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            item {
+                Text(
+                    text = stringResource(R.string.your_friends),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .padding(bottom = 20.dp, top = 6.dp)
+                )
+            }
+            if (friends.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.you_have_no_friends),
+                        style = AppTypography.labelSmall,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
+            items(friends, key = { it.uuid }) { friend ->
+                FriendItem(
+                    headline = friend.name,
+                    supporting = friend.email,
+                    photoUrl = friend.photoUrl,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
         }
-        ExtendedFloatingActionButton(
-            text = { Text(stringResource(R.string.add_friends)) },
-            icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-            onClick = onAddFriendsClick,
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            elevation = FloatingActionButtonDefaults.elevation(0.dp),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(vertical = 8.dp)
-        )
     }
 }
 
 @Composable
 private fun HomeBody(
-    modifier: Modifier = Modifier,
     expenses: List<Expense>,
     groups: List<Group>,
     onAddExpenseClick: () -> Unit,
@@ -246,36 +247,80 @@ private fun HomeBody(
     onExpenseClick: (String) -> Unit,
     onGroupClick: (String) -> Unit
 ) {
-    Column(modifier) {
-        TitleRow(
-            labelStringResource = R.string.your_expenses,
-            buttonStringResource = R.string.add,
-            onAddClick = onAddExpenseClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 20.dp, horizontal = 16.dp)
-        )
-        ExpensesRow(
-            expenses = expenses,
-            onExpenseClick = { onExpenseClick(it) },
-            modifier = Modifier.fillMaxWidth()
-        )
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            TitleRow(
+                labelStringResource = R.string.your_expenses,
+                buttonStringResource = R.string.add,
+                onAddClick = onAddExpenseClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 20.dp)
+            )
 
-        TitleRow(
-            labelStringResource = R.string.your_groups,
-            buttonStringResource = R.string.add,
-            onAddClick = onAddGroupClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 20.dp, horizontal = 16.dp)
-        )
-        GroupsColumn(
-            groups = groups,
-            onGroupClick = { onGroupClick(it) },
-            modifier = Modifier
-                .height(400.dp)
-                .padding(horizontal = 16.dp)
-        )
+            ExpensesRow(
+                expenses = expenses,
+                onExpenseClick = { onExpenseClick(it) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            TitleRow(
+                labelStringResource = R.string.your_groups,
+                buttonStringResource = R.string.add,
+                onAddClick = onAddGroupClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 20.dp, horizontal = 16.dp)
+            )
+        }
+        if (groups.isEmpty())
+            item {
+                Text(
+                    text = stringResource(R.string.you_have_no_groups),
+                    style = AppTypography.labelSmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        else items(groups, key = { it.id }) { group ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 8.dp)
+                    .clip(ShapeDefaults.Medium)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .clickable { onGroupClick(group.id) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (group.image.isNotEmpty()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(group.image)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(100.dp),
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                }
+                Text(
+                    text = group.name,
+                    style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
     }
 }
 
@@ -402,62 +447,6 @@ private fun ExpensesRow(
 //            }
             item {
                 Spacer(Modifier.width(8.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun GroupsColumn(
-    modifier: Modifier = Modifier,
-    groups: List<Group>,
-    onGroupClick: (String) -> Unit
-) {
-    if (groups.isEmpty()) Text(
-        text = stringResource(R.string.you_have_no_groups),
-        style = AppTypography.labelSmall,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth()
-    ) else {
-        LazyColumn(
-            modifier = modifier,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(groups, key = { it.id }) { group ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(ShapeDefaults.Medium)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .clickable { onGroupClick(group.id) },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (group.image.isNotEmpty()) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(group.image)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(100.dp),
-                        )
-                    } else {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(100.dp)
-                                .background(MaterialTheme.colorScheme.primary)
-                        )
-                    }
-                    Text(
-                        text = group.name,
-                        style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.groupExpense
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -66,6 +67,10 @@ fun GroupExpenseScreen(
 
     var paidByMenuExpanded by remember { mutableStateOf(false) }
     var methodMenuExpanded by remember { mutableStateOf(false) }
+
+    BackHandler {
+        onBackClick()
+    }
 
     Scaffold(
         topBar = {
