@@ -1,10 +1,14 @@
 package com.ragl.divide.ui.screens
 
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.FriendsRepository
@@ -24,6 +28,7 @@ data class UserState(
     val expenses: Map<String, Expense> = emptyMap(),
     val groups: Map<String, Group> = emptyMap(),
     val friends: Map<String, User> = emptyMap(),
+    val selectedGroupMembers: List<User> = emptyList(),
     val user: User = User()
 )
 
@@ -37,6 +42,9 @@ class UserViewModel @Inject constructor(
 
     private val _user = MutableStateFlow(UserState())
     val user = _user.asStateFlow()
+
+    var isLoadingMembers by mutableStateOf(false)
+        private set
 
     init {
         if (userRepository.getFirebaseUser() != null)
@@ -136,6 +144,34 @@ class UserViewModel @Inject constructor(
                     expense.value
                 }
             })
+        }
+    }
+
+    fun getGroupMembers(group: Group?) {
+        viewModelScope.launch {
+            isLoadingMembers = true
+            val users = group.let {
+                if (it != null) groupRepository.getUsers(it.users.values.toList())
+                else emptyList()
+            }
+            _user.update {
+                it.copy(selectedGroupMembers = users)
+            }
+            isLoadingMembers = false
+        }
+    }
+
+    fun saveGroupExpense(groupId: String, expense: GroupExpense) {
+        _user.update {
+            it.copy(
+                groups = it.groups.mapValues { group ->
+                    if (group.key == groupId) {
+                        group.value.copy(expenses = group.value.expenses + (expense.id to expense))
+                    } else {
+                        group.value
+                    }
+                }
+            )
         }
     }
 }

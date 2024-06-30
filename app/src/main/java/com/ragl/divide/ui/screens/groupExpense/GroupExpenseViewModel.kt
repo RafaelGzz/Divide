@@ -58,14 +58,18 @@ class GroupExpenseViewModel @Inject constructor(
         this.method = method
     }
 
-    fun setGroup(group: Group, userId: String) {
+    fun setGroup(group: Group, userId: String, members: List<User>) {
         viewModelScope.launch {
             _group.update {
                 group
             }
-            members = groupRepository.getUsers(_group.value.users.values.toList()).toMutableList()
+            updateMembers(members)
             paidBy = members.first { it.uuid == userId }
         }
+    }
+
+    fun updateMembers(members: List<User>) {
+        this.members = members
     }
 
     private fun validateTitle(): Boolean {
@@ -102,11 +106,11 @@ class GroupExpenseViewModel @Inject constructor(
         return true
     }
 
-    fun saveExpense(onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun saveExpense(onSuccess: (GroupExpense) -> Unit, onError: (String) -> Unit) {
         try {
             if (validateTitle() && validateAmount()) {
                 viewModelScope.launch {
-                    groupRepository.saveExpense(
+                    val savedExpense = groupRepository.saveExpense(
                         groupId = _group.value.id,
                         _expense.value.copy(
                             title = title,
@@ -115,7 +119,7 @@ class GroupExpenseViewModel @Inject constructor(
                             method = method
                         )
                     )
-                    onSuccess()
+                    onSuccess(savedExpense)
                 }
             }
         } catch (e: Exception) {

@@ -1,9 +1,12 @@
 package com.ragl.divide.ui.screens.groupDetails
 
-import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.GroupRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +26,13 @@ class GroupDetailsViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
-    fun setGroup(group: Group) {
+    var members by mutableStateOf<List<User>>(listOf())
+        private set
+
+    var userId by mutableStateOf("")
+        private set
+
+    fun setGroup(group: Group, userId: String, members: List<User>) {
         viewModelScope.launch {
             _isLoading.update {
                 true
@@ -31,9 +40,26 @@ class GroupDetailsViewModel @Inject constructor(
             _group.update {
                 group
             }
+            updateUserId(userId)
+            updateMembers(members)
             _isLoading.update {
                 false
             }
         }
     }
+
+    fun getPaidByNames(paidBy: List<String>): String {
+        return paidBy.map { uid ->
+            members.find { it.uuid == uid }?.name
+        }.joinToString(", ") // Une los nombres con comas
+    }
+
+    fun updateUserId(userId: String) {
+        this.userId = userId
+    }
+
+    fun updateMembers(members: List<User>) {
+        this.members = members
+    }
+
 }

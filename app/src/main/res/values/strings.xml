@@ -93,4 +93,7 @@
     <string name="search">Search</string>
     <string name="paid_by">Paid by</string>
     <string name="divided_by">Divided by</string>
+    <string name="equally">Equally</string>
+    <string name="percentages">Percentages</string>
+    <string name="custom">Custom</string>
 </resources>

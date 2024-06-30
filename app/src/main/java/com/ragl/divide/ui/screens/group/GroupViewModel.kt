@@ -63,15 +63,19 @@ class GroupViewModel @Inject constructor(
         }
     }
 
-    fun setGroup(group: Group) {
+    fun setGroup(group: Group, members: List<User>) {
         viewModelScope.launch {
             _isLoading.update { true }
             _group.update {
                 group
             }
-            members = groupRepository.getUsers(_group.value.users.values.toList()).toMutableList()
+            updateMembers(members)
             _isLoading.update { false }
         }
+    }
+
+    fun updateMembers(members: List<User>) {
+        this.members = members
     }
 
     fun leaveGroup(onSuccessful: () -> Unit, onError: (String) -> Unit) {

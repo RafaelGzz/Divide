@@ -26,7 +26,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,7 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.Method
+import com.ragl.divide.data.models.User
 import com.ragl.divide.ui.showToast
 import com.ragl.divide.ui.theme.AppTypography
 import com.ragl.divide.ui.utils.DivideTextField
@@ -53,14 +54,14 @@ fun GroupExpenseScreen(
     vm: GroupExpenseViewModel = hiltViewModel(),
     group: Group,
     userId: String,
+    members: List<User>,
     isUpdate: Boolean = false,
     onBackClick: () -> Unit,
-    onSaveExpense: () -> Unit
+    onSaveExpense: (GroupExpense) -> Unit
 ) {
     LaunchedEffect(Unit) {
-        vm.setGroup(group, userId)
+        vm.setGroup(group, userId, members)
     }
-    val expense by vm.expense.collectAsState()
     val context = LocalContext.current
 
     var paidByMenuExpanded by remember { mutableStateOf(false) }
@@ -214,7 +215,7 @@ fun GroupExpenseScreen(
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
                             ),
-                            value = vm.method.name,
+                            value = stringResource(vm.method.resId),
                             onValueChange = {},
                             singleLine = true,
                             readOnly = true,
@@ -233,7 +234,7 @@ fun GroupExpenseScreen(
                             Method.entries.forEach {
                                 DropdownMenuItem(text = {
                                     Text(
-                                        text = it.name,
+                                        text = stringResource(it.resId),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }, onClick = {

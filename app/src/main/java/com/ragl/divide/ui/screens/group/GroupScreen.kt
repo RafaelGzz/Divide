@@ -85,6 +85,7 @@ fun GroupScreen(
     vm: GroupViewModel = hiltViewModel(),
     friends: List<User>,
     group: Group,
+    members: List<User>,
     isUpdate: Boolean,
     onBackClick: () -> Unit,
     onDeleteGroup: () -> Unit,
@@ -92,7 +93,7 @@ fun GroupScreen(
 ) {
     LaunchedEffect(Unit) {
         if (isUpdate) {
-            vm.setGroup(group.copy())
+            vm.setGroup(group, members)
         }
     }
 
