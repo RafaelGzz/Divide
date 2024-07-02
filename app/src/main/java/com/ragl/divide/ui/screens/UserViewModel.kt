@@ -17,6 +17,7 @@ import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.ui.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -43,6 +44,8 @@ class UserViewModel @Inject constructor(
     private val _user = MutableStateFlow(UserState())
     val user = _user.asStateFlow()
 
+    private var selectedGroupId by mutableStateOf("")
+
     var isLoadingMembers by mutableStateOf(false)
         private set
 
@@ -52,7 +55,7 @@ class UserViewModel @Inject constructor(
     }
 
     fun getUserData() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _user.update {
                 it.copy(isLoading = true)
             }
@@ -82,10 +85,16 @@ class UserViewModel @Inject constructor(
     fun signOut(onSignOut: () -> Unit) {
         viewModelScope.launch {
             try {
+                _user.update {
+                    it.copy(isLoading = true)
+                }
                 userRepository.signOut()
                 if (userRepository.getFirebaseUser() == null) {
                     preferencesRepository.saveStartDestination(Screen.Login.route)
                     onSignOut()
+                    _user.update {
+                        UserState(isLoading = true)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", e.message.toString())
@@ -147,18 +156,17 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    fun getGroupMembers(group: Group?) {
-        viewModelScope.launch {
-            isLoadingMembers = true
-            val users = group.let {
-                if (it != null) groupRepository.getUsers(it.users.values.toList())
-                else emptyList()
+    fun getGroupMembers(group: Group) {
+        if (selectedGroupId != group.id)
+            viewModelScope.launch {
+                selectedGroupId = group.id
+                isLoadingMembers = true
+                val users = groupRepository.getUsers(group.users.values.toList())
+                _user.update {
+                    it.copy(selectedGroupMembers = users)
+                }
+                isLoadingMembers = false
             }
-            _user.update {
-                it.copy(selectedGroupMembers = users)
-            }
-            isLoadingMembers = false
-        }
     }
 
     fun saveGroupExpense(groupId: String, expense: GroupExpense) {

@@ -111,7 +111,8 @@ fun LogInScreen(
                     }
                 }
                 HorizontalPager(
-                    state = pagerState
+                    state = pagerState,
+                    userScrollEnabled = false
                 ) { pagerIndex ->
                     when (pagerIndex) {
                         0 -> Login(

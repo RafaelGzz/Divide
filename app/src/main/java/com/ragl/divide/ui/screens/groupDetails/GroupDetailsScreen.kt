@@ -1,48 +1,58 @@
 package com.ragl.divide.ui.screens.groupDetails
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -75,6 +85,7 @@ fun GroupDetailsScreen(
     editGroup: (String) -> Unit,
     onBackClick: () -> Unit,
     onAddExpenseClick: () -> Unit,
+    onAddPaymentClick: () -> Unit
 ) {
     BackHandler {
         onBackClick()
@@ -83,70 +94,84 @@ fun GroupDetailsScreen(
         groupDetailsViewModel.setGroup(group, userId, members)
     }
     val groupState by groupDetailsViewModel.group.collectAsState()
-    val isLoading by groupDetailsViewModel.isLoading.collectAsState()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         topBar = {
-            if (!isLoading)
-                GroupDetailsAppBar(
-                    groupName = groupState.name,
-                    image = groupState.image,
-                    onBackClick = onBackClick,
-                    scrollBehavior = scrollBehavior,
-                    onEditClick = {
-                        editGroup(groupState.id)
-                    }
-                )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                text = {
-                    Text(
-                        stringResource(R.string.add_expense),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                },
-                icon = { Icon(Icons.Filled.AttachMoney, contentDescription = null) },
-                onClick = onAddExpenseClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                elevation = FloatingActionButtonDefaults.elevation(0.dp),
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
+            GroupDetailsAppBar(
+                onBackClick = onBackClick,
+                onEditClick = {
+                    editGroup(groupState.id)
+                }
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        floatingActionButton = {
+            CustomFloatingActionButton(
+                {},
+                Icons.Filled.Add,
+                onAddExpenseClick,
+                onAddPaymentClick
+            )
+        }
     ) { paddingValues ->
-        if (!isLoading) {
-            Column(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
-                    .fillMaxSize()
+
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (groupState.expenses.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.group_no_expenses),
-                        style = AppTypography.labelSmall,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                if (group.image.isNotEmpty()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(group.image)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .size(60.dp)
+                            .background(MaterialTheme.colorScheme.primary)
                     )
                 }
-                ExpenseListView(
-                    expensesAndPayments = groupDetailsViewModel.expensesAndPayments,
-                    modifier = Modifier.weight(1f),
-                    getPaidByNames = groupDetailsViewModel::getPaidByNames,
-                    members = members
+                Text(
+                    group.name,
+                    style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary),
+                    softWrap = true,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
                 )
             }
-        } else {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                CircularProgressIndicator()
+            if (groupState.expenses.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.group_no_expenses),
+                    style = AppTypography.labelSmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
+            ExpenseListView(
+                expensesAndPayments = groupDetailsViewModel.expensesAndPayments,
+                modifier = Modifier.weight(1f),
+                getPaidByNames = groupDetailsViewModel::getPaidByNames,
+                members = members
+            )
         }
     }
 }
@@ -331,56 +356,16 @@ private fun GroupExpenseItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GroupDetailsAppBar(
-    groupName: String,
     onBackClick: () -> Unit,
-    onEditClick: () -> Unit,
-    image: String,
-    scrollBehavior: TopAppBarScrollBehavior
+    onEditClick: () -> Unit
 ) {
-    LargeTopAppBar(
-        scrollBehavior = scrollBehavior,
-        collapsedHeight = 80.dp,
+    TopAppBar(
         colors = TopAppBarDefaults.largeTopAppBarColors(
             scrolledContainerColor = Color.Transparent,
             containerColor = Color.Transparent,
             titleContentColor = MaterialTheme.colorScheme.primary
         ),
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (image.isNotEmpty()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(image)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(60.dp)
-                            .clip(CircleShape),
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .size(60.dp)
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
-                }
-                Text(
-                    groupName,
-                    softWrap = true,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        },
+        title = {},
         navigationIcon = {
             IconButton(
                 onClick = onBackClick
@@ -395,4 +380,130 @@ private fun GroupDetailsAppBar(
             }
         }
     )
+}
+
+@Composable
+fun CustomFloatingActionButton(
+    onFabClick: () -> Unit,
+    fabIcon: ImageVector,
+    onAddExpenseClick: () -> Unit,
+    onAddPaymentClick: () -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isExpanded) 1f else 0f,
+        animationSpec = spring(dampingRatio = 2f), label = "scale"
+    )
+    val rotation by animateFloatAsState(
+        targetValue = if (isExpanded) 315f else 0f,
+        animationSpec = spring(dampingRatio = 3f), label = "rotation"
+    )
+
+    Column {
+
+        // ExpandedBox over the FAB
+        Column(
+            modifier = Modifier
+                .offset(
+                    x = animateDpAsState(
+                        targetValue = if (isExpanded) 0.dp else 60.dp,
+                        animationSpec = spring(dampingRatio = 2f), label = "x"
+                    ).value,
+                    y = animateDpAsState(
+                        targetValue = if (isExpanded) 0.dp else 100.dp,
+                        animationSpec = spring(dampingRatio = 2f), label = "y"
+                    ).value
+                )
+                .scale(scale)
+        ) {
+            // Customize the content of the expanded box as needed
+            Button(
+                onClick = { onAddExpenseClick() },
+                shape = ShapeDefaults.Medium,
+                contentPadding = PaddingValues(horizontal = 8.dp),
+                modifier = Modifier
+                    .height(60.dp)
+                    .width(180.dp)
+            ) {
+                Icon(Icons.Filled.AttachMoney, contentDescription = null)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Agregar gasto",
+                    maxLines = 1,
+                    softWrap = true,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { onAddPaymentClick() },
+                shape = ShapeDefaults.Medium,
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                modifier = Modifier
+                    .height(60.dp)
+                    .width(180.dp)
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Realizar pago",
+                    maxLines = 1,
+                    softWrap = true,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        FloatingActionButton(
+            onClick = {
+                onFabClick()
+                isExpanded = !isExpanded
+            },
+            shape = ShapeDefaults.Medium,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier
+                .align(Alignment.End)
+        ) {
+
+            Icon(
+                imageVector = fabIcon,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(24.dp)
+                    .rotate(rotation)
+//                    .offset(
+//                        x = animateDpAsState(
+//                            if (isExpanded) (-70).dp else 0.dp,
+//                            animationSpec = spring(dampingRatio = 2f), label = "iconOffset"
+//                        ).value
+//                    )
+            )
+
+//            Text(
+//                text = "Create Reminder",
+//                softWrap = false,
+//                modifier = Modifier
+//                    .offset(
+//                        x = animateDpAsState(
+//                            if (isExpanded) 10.dp else 50.dp,
+//                            animationSpec = spring(dampingRatio = 2f), label = "textOffset"
+//                        ).value
+//                    )
+//                    .alpha(
+//                        animateFloatAsState(
+//                            targetValue = if (isExpanded) 1f else 0f,
+//                            animationSpec = tween(
+//                                durationMillis = if (isExpanded) 350 else 100,
+//                                delayMillis = if (isExpanded) 100 else 0,
+//                                easing = EaseIn
+//                            ), label = "textAlpha"
+//                        ).value
+//                    )
+//            )
+
+        }
+    }
 }

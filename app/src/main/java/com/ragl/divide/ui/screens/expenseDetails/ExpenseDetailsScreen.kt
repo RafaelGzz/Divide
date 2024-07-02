@@ -2,6 +2,10 @@ package com.ragl.divide.ui.screens.expenseDetails
 
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -73,7 +77,6 @@ fun ExpenseDetailsScreen(
         onBackClick()
     }
 
-
     LaunchedEffect(Unit) {
         expenseDetailsViewModel.setExpense(expense)
     }
@@ -119,7 +122,17 @@ fun ExpenseDetailsScreen(
                 )
         }
     ) { paddingValues ->
-        if (!isLoading)
+        if (isLoading)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                CircularProgressIndicator()
+            }
+        AnimatedVisibility(
+            visible = !isLoading, enter = fadeIn(animationSpec = tween(200)),
+            exit = ExitTransition.None
+        ) {
             Column(
                 modifier = Modifier
                     .padding(paddingValues)
@@ -175,7 +188,8 @@ fun ExpenseDetailsScreen(
                 Text(
                     text = stringResource(
                         R.string.added_on,
-                        DateFormat.getDateInstance(DateFormat.LONG).format(Date(expenseState.addedDate))
+                        DateFormat.getDateInstance(DateFormat.LONG)
+                            .format(Date(expenseState.addedDate))
                     ),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodySmall,
@@ -294,13 +308,7 @@ fun ExpenseDetailsScreen(
                         }
                 }
             }
-        else
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                CircularProgressIndicator()
-            }
+        }
     }
 }
 

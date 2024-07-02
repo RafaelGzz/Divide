@@ -92,10 +92,6 @@ fun GroupScreen(
     onSaveGroup: (Group) -> Unit,
 ) {
 
-    BackHandler {
-        onBackClick()
-    }
-
     LaunchedEffect(Unit) {
         if (isUpdate) {
             vm.setGroup(group, members)
@@ -145,6 +141,13 @@ fun GroupScreen(
 
     var showFriendSelection by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
+
+    BackHandler {
+        if (showFriendSelection)
+            showFriendSelection = false
+        else
+            onBackClick()
+    }
 
     Box {
         if (!showFriendSelection) {

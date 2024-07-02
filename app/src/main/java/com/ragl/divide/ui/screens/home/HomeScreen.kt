@@ -1,6 +1,13 @@
 package com.ragl.divide.ui.screens.home
 
+import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,6 +31,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.People
@@ -38,7 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,11 +78,12 @@ import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.screens.UserViewModel
+import com.ragl.divide.ui.showToast
 import com.ragl.divide.ui.theme.AppTypography
 import com.ragl.divide.ui.utils.FriendItem
 import java.text.NumberFormat
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -103,97 +112,117 @@ fun HomeScreen(
     val groups = remember(user.groups) {
         user.groups.values.toList().sortedBy { it.id }
     }
-
     var pullLoading by remember { mutableStateOf(user.isLoading) }
     LaunchedEffect(user.isLoading) {
         pullLoading = user.isLoading
     }
 
-    Scaffold(
-        topBar = {
-            TopBar(
-                user = user.user,
-                onTapUserImage = { vm.signOut { onSignOut() } },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    //.padding(horizontal = 16.dp)
-                    //.clip(ShapeDefaults.Medium)
-                    //.background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
-                    .statusBarsPadding()
-            )
-        },
-        bottomBar = {
-            if (!user.isLoading)
-                BottomBar(
-                    tabs = tabs,
-                    selectedTabIndex = selectedTabIndex,
-                    onItemClick = {
-                        selectedTabIndex = it
-                    }
-                )
-        },
-        floatingActionButton = {
-            if (selectedTabIndex == 1) {
-                ExtendedFloatingActionButton(
-                    text = { Text(stringResource(R.string.add_friends)) },
-                    icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                    onClick = onAddFriendsClick,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    elevation = FloatingActionButtonDefaults.elevation(0.dp),
-                    modifier = Modifier
-                        .padding(vertical = 8.dp)
-                )
-            }
+    var exit by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    BackHandler {
+        if (exit) {
+            context.startActivity(Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            })
+        } else {
+            exit = true
+            showToast(context, context.getString(R.string.press_again_to_exit))
         }
-    ) { paddingValues ->
-        Column(
-            modifier = modifier
-                .padding(paddingValues)
+    }
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        if (user.isLoading) {
+            CircularProgressIndicator()
+        }
+        AnimatedVisibility(
+            visible = !user.isLoading,
+            enter = fadeIn(animationSpec = tween(500)),
+            exit = ExitTransition.None
         ) {
-            if (!user.isLoading) {
-                PullToRefreshBox(
-                    isRefreshing = pullLoading,
-                    state = pullToRefreshState,
-                    onRefresh = vm::getUserData,
-                    indicator = {
-                        Indicator(
-                            modifier = Modifier.align(Alignment.TopCenter),
-                            state = pullToRefreshState,
-                            isRefreshing = pullLoading,
-                            color = MaterialTheme.colorScheme.primary,
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
+            Scaffold(
+                topBar = {
+                    TopBar(
+                        user = user.user,
+                        onTapUserImage = { vm.signOut { onSignOut() } },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            //.padding(horizontal = 16.dp)
+                            //.clip(ShapeDefaults.Medium)
+                            //.background(MaterialTheme.colorScheme.primaryContainer)
+                            .padding(horizontal = 16.dp, vertical = 20.dp)
+                            .statusBarsPadding()
+                    )
+
+                },
+                bottomBar = {
+                    BottomBar(
+                        tabs = tabs,
+                        selectedTabIndex = selectedTabIndex,
+                        onItemClick = {
+                            selectedTabIndex = it
+                        }
+                    )
+                },
+                floatingActionButton = {
+                    if (selectedTabIndex == 1) {
+                        ExtendedFloatingActionButton(
+                            text = { Text(stringResource(R.string.add_friends)) },
+                            icon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                            onClick = onAddFriendsClick,
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            elevation = FloatingActionButtonDefaults.elevation(0.dp),
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
                         )
                     }
+                }
+            ) { paddingValues ->
+                Column(
+                    modifier = modifier
+                        .padding(paddingValues)
                 ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        when (selectedTabIndex) {
-                            0 -> HomeBody(
-                                expenses = expenses,
-                                groups = groups,
-                                onAddExpenseClick = onAddExpenseClick,
-                                onAddGroupClick = onAddGroupClick,
-                                onExpenseClick = onExpenseClick,
-                                onGroupClick = onGroupClick
-                            )
 
-                            1 -> FriendsBody(
-                                friends = friends
+                    PullToRefreshBox(
+                        isRefreshing = pullLoading,
+                        state = pullToRefreshState,
+                        onRefresh = vm::getUserData,
+                        indicator = {
+                            PullToRefreshDefaults.Indicator(
+                                modifier = Modifier.align(Alignment.TopCenter),
+                                state = pullToRefreshState,
+                                isRefreshing = pullLoading,
+                                color = MaterialTheme.colorScheme.primary,
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
                             )
+                        }
+                    ) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            when (selectedTabIndex) {
+                                0 -> HomeBody(
+                                    expenses = expenses,
+                                    groups = groups,
+                                    onAddExpenseClick = onAddExpenseClick,
+                                    onAddGroupClick = onAddGroupClick,
+                                    onExpenseClick = onExpenseClick,
+                                    onGroupClick = onGroupClick
+                                )
+
+                                1 -> FriendsBody(
+                                    friends = friends
+                                )
+                            }
                         }
                     }
                 }
-            } else {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    CircularProgressIndicator()
-                }
             }
         }
-
     }
 }
 
@@ -284,44 +313,50 @@ private fun HomeBody(
                 )
             }
         else items(groups, key = { it.id }) { group ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 8.dp)
-                    .clip(ShapeDefaults.Medium)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickable { onGroupClick(group.id) },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (group.image.isNotEmpty()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(group.image)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(100.dp),
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(100.dp)
-                            .background(MaterialTheme.colorScheme.primary)
+                Row(
+                    modifier = Modifier.Companion
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 8.dp)
+                        .clip(ShapeDefaults.Medium)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .clickable { onGroupClick(group.id) },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (group.image.isNotBlank()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(group.image)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.Companion
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.Companion
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                    Text(
+                        text = group.name,
+                        style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
+                        modifier = Modifier.Companion
+                            .padding(16.dp)
+                            .fillMaxWidth()
                     )
                 }
-                Text(
-                    text = group.name,
-                    style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
-                    modifier = Modifier.padding(16.dp)
-                )
             }
         }
-    }
+
 }
 
 @Composable

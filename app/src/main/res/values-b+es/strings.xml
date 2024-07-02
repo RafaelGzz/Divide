@@ -96,4 +96,5 @@
     <string name="equally">Partes iguales</string>
     <string name="percentages">Porcentajes</string>
     <string name="custom">Personalizado</string>
+    <string name="press_again_to_exit">Presiona de nuevo para salir</string>
 </resources>
