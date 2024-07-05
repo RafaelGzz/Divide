@@ -76,12 +76,8 @@ class GroupRepositoryImpl(
         groupRef.child(userId).setValue(userId).await()
     }
 
-    override suspend fun getUsers(userIds: List<String>): List<User> {
-        val users = mutableListOf<User>()
-        userIds.map {
-            userRepository.getUser(it)
-        }.forEach { users.add(it) }
-        return users
+    override suspend fun getUsers(userIds: List<String>): List<User> = userIds.map {
+        userRepository.getUser(it)
     }
 
     override suspend fun leaveGroup(groupId: String) {

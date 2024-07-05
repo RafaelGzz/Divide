@@ -9,7 +9,7 @@ data class GroupExpense(
     override val amount: Double = 0.0,
     override val notes: String = "",
     override val addedDate: Long = Date().time,
-    val method: Method = Method.EQUALLY,
+    val splitMethod: Method = Method.EQUALLY,
     val paidBy: Map<String, String> = emptyMap(),
     val debtors: Map<String, String> = emptyMap(),
 ): IExpense

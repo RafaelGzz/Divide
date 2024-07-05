@@ -48,10 +48,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.ragl.divide.data.models.User
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -207,11 +207,12 @@ fun FriendItem(
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
     ),
     icon: ImageVector = Icons.Filled.Person,
+    trailingContent: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null
 ) {
     val interactionSource by remember { mutableStateOf(MutableInteractionSource()) }
     val supportingContent: @Composable (() -> Unit)? = if (supporting.isNotEmpty()) {
-        @Composable { Text(text = supporting) }
+        @Composable { Text(text = supporting, style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))) }
     } else {
         null
     }
@@ -233,7 +234,9 @@ fun FriendItem(
             headlineContent = {
                 Text(
                     text = headline,
-                    color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    color = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    overflow = TextOverflow.Ellipsis,
+                    softWrap = true
                 )
             },
             supportingContent = supportingContent,
@@ -263,7 +266,8 @@ fun FriendItem(
                             .padding(12.dp)
                     )
                 }
-            }
+            },
+            trailingContent = trailingContent
         )
     }
 }

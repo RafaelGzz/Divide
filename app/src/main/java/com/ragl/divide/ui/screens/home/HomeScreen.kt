@@ -170,7 +170,11 @@ fun HomeScreen(
                     )
                 },
                 floatingActionButton = {
-                    if (selectedTabIndex == 1) {
+                    AnimatedVisibility(
+                        visible = selectedTabIndex == 1,
+                        enter = fadeIn(animationSpec = tween(300)),
+                        exit = ExitTransition.None
+                    ) {
                         ExtendedFloatingActionButton(
                             text = { Text(stringResource(R.string.add_friends)) },
                             icon = { Icon(Icons.Filled.Person, contentDescription = null) },
@@ -204,8 +208,12 @@ fun HomeScreen(
                         }
                     ) {
                         Column(modifier = Modifier.fillMaxSize()) {
-                            when (selectedTabIndex) {
-                                0 -> HomeBody(
+                            AnimatedVisibility(
+                                visible = selectedTabIndex == 0,
+                                enter = fadeIn(animationSpec = tween(500)),
+                                exit = ExitTransition.None
+                            ) {
+                                HomeBody(
                                     expenses = expenses,
                                     groups = groups,
                                     onAddExpenseClick = onAddExpenseClick,
@@ -213,8 +221,13 @@ fun HomeScreen(
                                     onExpenseClick = onExpenseClick,
                                     onGroupClick = onGroupClick
                                 )
-
-                                1 -> FriendsBody(
+                            }
+                            AnimatedVisibility(
+                                visible = selectedTabIndex == 1,
+                                enter = fadeIn(animationSpec = tween(500)),
+                                exit = ExitTransition.None
+                            ) {
+                                FriendsBody(
                                     friends = friends
                                 )
                             }
@@ -313,49 +326,49 @@ private fun HomeBody(
                 )
             }
         else items(groups, key = { it.id }) { group ->
-                Row(
-                    modifier = Modifier.Companion
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 8.dp)
-                        .clip(ShapeDefaults.Medium)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .clickable { onGroupClick(group.id) },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (group.image.isNotBlank()) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(group.image)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.Companion
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
-                        )
-                    } else {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.Companion
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
-                                .background(MaterialTheme.colorScheme.primary)
-                        )
-                    }
-                    Text(
-                        text = group.name,
-                        style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
+            Row(
+                modifier = Modifier.Companion
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 8.dp)
+                    .clip(ShapeDefaults.Medium)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .clickable { onGroupClick(group.id) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (group.image.isNotBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(group.image)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier.Companion
-                            .padding(16.dp)
-                            .fillMaxWidth()
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.Companion
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                            .background(MaterialTheme.colorScheme.primary)
                     )
                 }
+                Text(
+                    text = group.name,
+                    style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
+                    modifier = Modifier.Companion
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                )
             }
         }
+    }
 
 }
 

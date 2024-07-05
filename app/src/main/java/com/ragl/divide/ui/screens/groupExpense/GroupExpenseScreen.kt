@@ -3,15 +3,25 @@ package com.ragl.divide.ui.screens.groupExpense
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -28,9 +38,11 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -48,6 +60,9 @@ import com.ragl.divide.data.models.User
 import com.ragl.divide.ui.showToast
 import com.ragl.divide.ui.theme.AppTypography
 import com.ragl.divide.ui.utils.DivideTextField
+import com.ragl.divide.ui.utils.FriendItem
+import com.ragl.divide.ui.utils.validateQuantity
+import java.text.NumberFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,63 +83,71 @@ fun GroupExpenseScreen(
     var paidByMenuExpanded by remember { mutableStateOf(false) }
     var methodMenuExpanded by remember { mutableStateOf(false) }
 
-    BackHandler {
-        onBackClick()
-    }
+    var selectedFriends by remember { mutableStateOf(members.map { it.uuid }) }
+    var amountPerPerson by remember { mutableDoubleStateOf(0.0) }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        stringResource(if (!isUpdate) R.string.add_expense else R.string.update_expense),
-                        style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary)
-                    )
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onBackClick
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            Button(
-                onClick = {
-                    vm.saveExpense(
-                        onSuccess = onSaveExpense,
-                        onError = {
-                            showToast(context, it)
+    BackHandler {
+        if (methodMenuExpanded) methodMenuExpanded = false
+        else onBackClick()
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            stringResource(if (!isUpdate) R.string.add_expense else R.string.update_expense),
+                            style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary)
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = onBackClick
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    )
-                },
-                shape = ShapeDefaults.Medium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(128.dp)
-                    .padding(horizontal = 16.dp, vertical = 32.dp)
-            ) {
-                Text(
-                    text = stringResource(if (!isUpdate) R.string.add else R.string.update),
-                    style = MaterialTheme.typography.bodyLarge
+                    }
                 )
+            },
+            bottomBar = {
+                Button(
+                    onClick = {
+                        vm.saveExpense(
+                            onSuccess = onSaveExpense,
+                            onError = {
+                                showToast(context, it)
+                            }
+                        )
+                    },
+                    shape = ShapeDefaults.Medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = stringResource(if (!isUpdate) R.string.add else R.string.update),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                }
             }
-        }
-    ) { paddingValues ->
-        Column(
-            Modifier
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ) { paddingValues ->
+            Column(
+                Modifier
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+            ) {
+
                 DivideTextField(
                     label = stringResource(R.string.title),
                     input = vm.title,
                     error = vm.titleError,
                     onValueChange = vm::updateTitle,
-                    modifier = Modifier.weight(.5f)
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
                 DivideTextField(
                     label = stringResource(R.string.amount),
@@ -133,24 +156,12 @@ fun GroupExpenseScreen(
                     input = vm.amount,
                     error = vm.amountError,
                     onValueChange = { input ->
-                        if (input.isEmpty()) vm.updateAmount("") else {
-                            val formatted = input.replace(",", ".")
-                            val parsed = formatted.toDoubleOrNull()
-                            parsed?.let {
-                                val decimalPart = formatted.substringAfter(".", "")
-                                if (decimalPart.length <= 2 && parsed <= 999999999.99) {
-                                    vm.updateAmount(input)
-                                }
-                            }
-                        }
+                        validateQuantity(input, vm::updateAmount)
+                        amountPerPerson = (vm.amount.toDoubleOrNull() ?: 0.0) / selectedFriends.size
                     },
-                    modifier = Modifier.weight(.5f)
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Column(
-                    modifier = Modifier.weight(.5f)
-                ) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text(
                         text = stringResource(R.string.paid_by),
                         style = AppTypography.labelSmall.copy(fontWeight = FontWeight.Normal),
@@ -158,7 +169,9 @@ fun GroupExpenseScreen(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     ExposedDropdownMenuBox(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 24.dp),
                         expanded = paidByMenuExpanded,
                         onExpandedChange = { paidByMenuExpanded = !paidByMenuExpanded }) {
                         TextField(
@@ -200,17 +213,17 @@ fun GroupExpenseScreen(
                         }
                     }
                 }
-                Column(
-                    modifier = Modifier.weight(.5f)
-                ) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text(
-                        text = stringResource(R.string.divided_by),
+                        text = stringResource(R.string.split_method),
                         style = AppTypography.labelSmall.copy(fontWeight = FontWeight.Normal),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     ExposedDropdownMenuBox(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 24.dp),
                         expanded = methodMenuExpanded,
                         onExpandedChange = { methodMenuExpanded = !methodMenuExpanded }) {
                         TextField(
@@ -239,7 +252,7 @@ fun GroupExpenseScreen(
                             Method.entries.forEach {
                                 DropdownMenuItem(text = {
                                     Text(
-                                        text = stringResource(it.resId),
+                                        stringResource(it.resId),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }, onClick = {
@@ -252,8 +265,115 @@ fun GroupExpenseScreen(
                         }
                     }
                 }
-            }
+                Text(
+                    text = when (vm.method) {
+                        Method.EQUALLY -> stringResource(R.string.select_who_pays)
+                        Method.PERCENTAGES -> stringResource(R.string.indicate_percentages)
+                        Method.CUSTOM -> stringResource(R.string.indicate_quantities)
+                    },
+                    style = AppTypography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .padding(bottom = 8.dp)
+                        .padding(horizontal = 16.dp)
+                )
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom
+                ) {
+                    when (vm.method) {
+                        Method.EQUALLY -> {
+                            Text("${NumberFormat.getCurrencyInstance().format(amountPerPerson)}/persona",
+                                style = AppTypography.titleMedium.copy(color = MaterialTheme.colorScheme.primary)
+                            )
+                            Text(
+                                "(${selectedFriends.size} ${if (selectedFriends.size > 1) "personas" else "persona"})",
+                                style = AppTypography.bodySmall
+                            )
+                        }
 
+                        Method.PERCENTAGES -> {
+
+                        }
+
+                        Method.CUSTOM -> {
+
+                        }
+                    }
+                }
+                vm.members.forEach { friend ->
+                    var percentage by remember { mutableStateOf("0") }
+                    var quantity by remember { mutableStateOf("") }
+
+                    FriendItem(
+                        headline = friend.name,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        trailingContent = {
+                            when (vm.method) {
+                                Method.EQUALLY -> Checkbox(
+                                    checked = friend.uuid in selectedFriends,
+                                    onCheckedChange = {
+                                        selectedFriends = if (it) selectedFriends + friend.uuid
+                                        else selectedFriends - friend.uuid
+
+                                        amountPerPerson = (vm.amount.toDoubleOrNull()
+                                            ?: 0.0) / selectedFriends.size
+                                    })
+
+                                Method.PERCENTAGES -> TextField(
+                                    value = percentage,
+                                    onValueChange = { percentage = it },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    shape = ShapeDefaults.Medium,
+                                    trailingIcon = {
+                                        Icon(
+                                            Icons.Default.Percent,
+                                            contentDescription = "Percentage icon",
+                                            Modifier.size(16.dp)
+                                        )
+                                    },
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                    ),
+                                    modifier = Modifier.width(80.dp)
+                                )
+
+                                Method.CUSTOM -> TextField(
+                                    value = quantity,
+                                    onValueChange = { quantity = it },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    shape = ShapeDefaults.Medium,
+                                    trailingIcon = {
+                                        Icon(
+                                            Icons.Default.AttachMoney,
+                                            contentDescription = "Money icon",
+                                            Modifier.size(16.dp)
+                                        )
+                                    },
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                    ),
+                                    modifier = Modifier.width(80.dp)
+                                )
+                            }
+                        }
+                    )
+                }
+            }
         }
     }
 }

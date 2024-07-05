@@ -115,8 +115,8 @@ class GroupExpenseViewModel @Inject constructor(
                         _expense.value.copy(
                             title = title,
                             amount = amount.toDouble(),
-                            paidBy = mapOf(paidBy.uuid to paidBy.uuid),
-                            method = method
+                            paidBy = mapOf(paidBy.uuid to amount),
+                            splitMethod = method
                         )
                     )
                     onSuccess(savedExpense)

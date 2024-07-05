@@ -1,9 +1,13 @@
 package com.ragl.divide.ui.screens.groupDetails
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -113,65 +117,70 @@ fun GroupDetailsScreen(
             )
         }
     ) { paddingValues ->
-
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+        AnimatedVisibility(
+            true,
+            enter = fadeIn(animationSpec = tween(500)),
+            exit = fadeOut(animationSpec = tween(500))
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            Column(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp)
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
             ) {
-                if (group.image.isNotEmpty()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(group.image)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    if (group.image.isNotEmpty()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(group.image)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(60.dp)
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .size(60.dp)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                    Text(
+                        group.name,
+                        style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary),
+                        softWrap = true,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
-                            .size(60.dp)
-                            .clip(CircleShape)
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .size(60.dp)
-                            .background(MaterialTheme.colorScheme.primary)
+                            .fillMaxWidth()
                     )
                 }
-                Text(
-                    group.name,
-                    style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary),
-                    softWrap = true,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .fillMaxWidth()
+                if (groupState.expenses.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.group_no_expenses),
+                        style = AppTypography.labelSmall,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                ExpenseListView(
+                    expensesAndPayments = groupDetailsViewModel.expensesAndPayments,
+                    modifier = Modifier.weight(1f),
+                    getPaidByNames = groupDetailsViewModel::getPaidByNames,
+                    members = members
                 )
             }
-            if (groupState.expenses.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.group_no_expenses),
-                    style = AppTypography.labelSmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            ExpenseListView(
-                expensesAndPayments = groupDetailsViewModel.expensesAndPayments,
-                modifier = Modifier.weight(1f),
-                getPaidByNames = groupDetailsViewModel::getPaidByNames,
-                members = members
-            )
         }
     }
 }
@@ -207,7 +216,7 @@ private fun ExpenseListView(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = modifier
     ) {
-        items(expensesByMonth.keys.toList().sortedDescending()) { month ->
+        items(expensesByMonth.keys.toList().sorted()) { month ->
             MonthSection(
                 month = month,
                 expensesAndPayments = expensesByMonth[month] ?: emptyList(),
@@ -308,7 +317,7 @@ private fun GroupExpenseItem(
                     )
                     Text(
                         text = stringResource(R.string.paid_by) + " " + getPaidByNames(
-                            expenseOrPayment.paidBy.values.toList()
+                            expenseOrPayment.paidBy.keys.toList()
                         ),
                         maxLines = 1,
                         softWrap = true,

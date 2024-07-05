@@ -65,7 +65,7 @@ fun DivideApp(
                     fadeIn(animationSpec = tween(500))
                 },
                 exitTransition = {
-                    fadeOut(animationSpec = tween(500))
+                    fadeOut(animationSpec = tween(300))
                 }
             ) {
                 Scaffold {
@@ -77,7 +77,7 @@ fun DivideApp(
                     fadeIn(animationSpec = tween(500))
                 },
                 exitTransition = {
-                    fadeOut(animationSpec = tween(500))
+                    fadeOut(animationSpec = tween(300))
                 }
             ) {
                 LogInScreen(
@@ -115,7 +115,7 @@ fun DivideApp(
                     fadeIn(animationSpec = tween(500))
                 },
                 exitTransition = {
-                    fadeOut(animationSpec = tween(500))
+                    fadeOut(animationSpec = tween(300))
                 }
             ) {
                 HomeScreen(
@@ -144,7 +144,7 @@ fun DivideApp(
                     fadeIn(animationSpec = tween(500))
                 },
                 exitTransition = {
-                    fadeOut(animationSpec = tween(500))
+                    fadeOut(animationSpec = tween(300))
                 }
             ) {
                 val args: Screen.Expense = it.toRoute()
@@ -168,7 +168,7 @@ fun DivideApp(
                     fadeIn(animationSpec = tween(500))
                 },
                 exitTransition = {
-                    fadeOut(animationSpec = tween(500))
+                    fadeOut(animationSpec = tween(300))
                 }
             ) {
                 val args: Screen.ExpenseDetails = it.toRoute()
@@ -213,7 +213,7 @@ fun DivideApp(
                     fadeIn(animationSpec = tween(500))
                 },
                 exitTransition = {
-                    fadeOut(animationSpec = tween(500))
+                    fadeOut(animationSpec = tween(300))
                 }
             ) {
                 val args: Screen.Group = it.toRoute()
@@ -240,12 +240,12 @@ fun DivideApp(
             }
             composable<Screen.GroupDetails>(
                 enterTransition = {
-                    fadeIn()
+                    fadeIn(animationSpec = tween(500))
                 },
                 exitTransition = {
-                    fadeOut()
+                    fadeOut(animationSpec = tween(300))
                 }
-            )  {
+            ) {
                 val args: Screen.GroupDetails = it.toRoute()
                 if (!userViewModel.isLoadingMembers)
                     GroupDetailsScreen(
@@ -271,7 +271,7 @@ fun DivideApp(
                     fadeIn(animationSpec = tween(500))
                 },
                 exitTransition = {
-                    fadeOut(animationSpec = tween(500))
+                    fadeOut(animationSpec = tween(300))
                 }
             ) {
                 val args: Screen.GroupExpense = it.toRoute()
@@ -291,7 +291,7 @@ fun DivideApp(
                     fadeIn(animationSpec = tween(500))
                 },
                 exitTransition = {
-                    fadeOut(animationSpec = tween(500))
+                    fadeOut(animationSpec = tween(300))
                 }
             ) {
                 AddFriendsScreen(

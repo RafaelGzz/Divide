@@ -92,9 +92,12 @@
     <string name="add_friends_to_group">Añadir amigos al grupo</string>
     <string name="search">Buscar</string>
     <string name="paid_by">Pagado por</string>
-    <string name="divided_by">Dividido por</string>
+    <string name="split_method">Método de división</string>
     <string name="equally">Partes iguales</string>
     <string name="percentages">Porcentajes</string>
     <string name="custom">Personalizado</string>
     <string name="press_again_to_exit">Presiona de nuevo para salir</string>
+    <string name="select_who_pays">Selecciona quienes deben pagar:</string>
+    <string name="indicate_percentages">Indica el porcentaje de cada miembro:</string>
+    <string name="indicate_quantities">Indica cuanto debe pagar cada miembro:</string>
 </resources>
