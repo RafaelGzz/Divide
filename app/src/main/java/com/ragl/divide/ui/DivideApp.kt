@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.addFriends.AddFriendsScreen
@@ -35,9 +36,11 @@ import com.ragl.divide.ui.screens.expenseDetails.ExpenseDetailsScreen
 import com.ragl.divide.ui.screens.group.GroupScreen
 import com.ragl.divide.ui.screens.groupDetails.GroupDetailsScreen
 import com.ragl.divide.ui.screens.groupExpense.GroupExpenseScreen
+import com.ragl.divide.ui.screens.groupExpenseDetails.GroupExpenseDetailsScreen
 import com.ragl.divide.ui.screens.home.HomeScreen
 import com.ragl.divide.ui.screens.signIn.LogInScreen
 import com.ragl.divide.ui.screens.signIn.SignInViewModel
+import com.ragl.divide.ui.utils.Screen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -255,6 +258,14 @@ fun DivideApp(
                         editGroup = { id -> navController.navTo(Screen.Group(groupId = id)) },
                         onBackClick = { navController.navigateUp() },
                         onAddExpenseClick = { navController.navTo(Screen.GroupExpense(args.groupId)) },
+                        onExpenseClick = { expenseId ->
+                            navController.navTo(
+                                Screen.GroupExpenseDetails(
+                                    groupId = args.groupId,
+                                    expenseId = expenseId
+                                )
+                            )
+                        },
                         onAddPaymentClick = {}
                     )
                 else
@@ -278,11 +289,36 @@ fun DivideApp(
                 GroupExpenseScreen(
                     onBackClick = { navController.navigateUp() },
                     group = user.groups[args.groupId]!!,
+                    expense = if(args.expenseId.isNotEmpty()) user.groups[args.groupId]!!.expenses[args.expenseId]!! else GroupExpense(),
+                    isUpdate = args.expenseId.isNotEmpty(),
                     userId = user.user.uuid,
                     members = user.selectedGroupMembers,
-                    onSaveExpense = { expense ->
-                        userViewModel.saveGroupExpense(args.groupId, expense)
+                    onSaveExpense = { groupExpense ->
+                        userViewModel.saveGroupExpense(args.groupId, groupExpense)
                         navController.navigateUp()
+                    }
+                )
+            }
+            composable<Screen.GroupExpenseDetails>(
+                enterTransition = {
+                    fadeIn(animationSpec = tween(500))
+                },
+                exitTransition = {
+                    fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                val args: Screen.GroupExpenseDetails = it.toRoute()
+                GroupExpenseDetailsScreen(
+                    groupExpense = user.groups[args.groupId]!!.expenses[args.expenseId]!!,
+                    members = user.selectedGroupMembers,
+                    onBackClick = { navController.navigateUp() },
+                    onEditClick = { expenseId ->
+                        navController.navTo(
+                            Screen.GroupExpense(
+                                groupId = args.groupId,
+                                expenseId = expenseId
+                            )
+                        )
                     }
                 )
             }

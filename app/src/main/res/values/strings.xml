@@ -100,4 +100,13 @@
     <string name="select_who_pays">Select who must pay:</string>
     <string name="indicate_percentages">Indicate the percentage of each member:</string>
     <string name="indicate_quantities">Indicate how much each member must pay:</string>
+    <string name="x_per_person">%1$s/person</string>
+    <string name="x_people">(%1$s people)</string>
+    <string name="one_person">(1 person)</string>
+    <string name="remaining_x">Remaining: %1$s</string>
+    <string name="x_of_y">%1$s of %2$s</string>
+    <string name="x_exceeded">%1$s surplus</string>
+    <string name="one_person_must_be_selected">At least one person must be selected</string>
+    <string name="percentages_sum_must_be_100">Percentage sum must be 100%</string>
+    <string name="quantities_sum_must_be_amount">Quantities sum must be %1$s</string>
 </resources>

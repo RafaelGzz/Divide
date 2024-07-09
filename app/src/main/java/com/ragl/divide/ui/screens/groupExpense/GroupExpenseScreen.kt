@@ -5,19 +5,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -38,7 +38,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,10 +45,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ragl.divide.R
@@ -62,6 +63,7 @@ import com.ragl.divide.ui.theme.AppTypography
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.FriendItem
 import com.ragl.divide.ui.utils.validateQuantity
+import java.math.RoundingMode
 import java.text.NumberFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,22 +71,20 @@ import java.text.NumberFormat
 fun GroupExpenseScreen(
     vm: GroupExpenseViewModel = hiltViewModel(),
     group: Group,
+    expense: GroupExpense,
     userId: String,
     members: List<User>,
-    isUpdate: Boolean = false,
+    isUpdate: Boolean,
     onBackClick: () -> Unit,
     onSaveExpense: (GroupExpense) -> Unit
 ) {
     LaunchedEffect(Unit) {
-        vm.setGroup(group, userId, members)
+        vm.setGroupAndExpense(group, userId, members, expense)
     }
     val context = LocalContext.current
 
     var paidByMenuExpanded by remember { mutableStateOf(false) }
     var methodMenuExpanded by remember { mutableStateOf(false) }
-
-    var selectedFriends by remember { mutableStateOf(members.map { it.uuid }) }
-    var amountPerPerson by remember { mutableDoubleStateOf(0.0) }
 
     BackHandler {
         if (methodMenuExpanded) methodMenuExpanded = false
@@ -115,12 +115,54 @@ fun GroupExpenseScreen(
             bottomBar = {
                 Button(
                     onClick = {
-                        vm.saveExpense(
-                            onSuccess = onSaveExpense,
-                            onError = {
-                                showToast(context, it)
+                        if (vm.validateTitle() && vm.validateAmount()) {
+                            when (vm.method) {
+                                Method.EQUALLY -> {
+                                    if (vm.selectedMembers.isEmpty()) {
+                                        showToast(
+                                            context,
+                                            context.getString(R.string.one_person_must_be_selected)
+                                        )
+                                    } else {
+                                        vm.saveEquallyExpense(
+                                            onSuccess = onSaveExpense,
+                                            onError = { showToast(context, it) }
+                                        )
+                                    }
+                                }
+
+                                Method.PERCENTAGES -> {
+                                    if (vm.percentages.values.sum() != 100) {
+                                        showToast(
+                                            context,
+                                            context.getString(R.string.percentages_sum_must_be_100)
+                                        )
+                                    } else {
+                                        vm.savePercentageExpense(
+                                            onSuccess = onSaveExpense,
+                                            onError = { showToast(context, it) }
+                                        )
+                                    }
+                                }
+
+                                Method.CUSTOM -> {
+                                    if (vm.quantities.values.sum() != (vm.amount.toDouble())) {
+                                        showToast(
+                                            context,
+                                            context.getString(
+                                                R.string.quantities_sum_must_be_amount,
+                                                vm.amount
+                                            )
+                                        )
+                                    } else {
+                                        vm.saveCustomExpense(
+                                            onSuccess = onSaveExpense,
+                                            onError = { showToast(context, it) }
+                                        )
+                                    }
+                                }
                             }
-                        )
+                        }
                     },
                     shape = ShapeDefaults.Medium,
                     modifier = Modifier
@@ -157,7 +199,13 @@ fun GroupExpenseScreen(
                     error = vm.amountError,
                     onValueChange = { input ->
                         validateQuantity(input, vm::updateAmount)
-                        amountPerPerson = (vm.amount.toDoubleOrNull() ?: 0.0) / selectedFriends.size
+                        vm.updateAmountPerPerson(
+                            if (vm.selectedMembers.isEmpty()) 0.0 else {
+                                ((vm.amount.toDoubleOrNull()
+                                    ?: 0.0) / vm.selectedMembers.size).toBigDecimal()
+                                    .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                            }
+                        )
                     },
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
@@ -257,6 +305,17 @@ fun GroupExpenseScreen(
                                     )
                                 }, onClick = {
                                     vm.updateMethod(it)
+                                    if (it == Method.EQUALLY) {
+                                        vm.updateAmountPerPerson(
+                                            if (vm.selectedMembers.isEmpty()) 0.0 else {
+                                                ((vm.amount.toDoubleOrNull()
+                                                    ?: 0.0) / vm.selectedMembers.size).toBigDecimal()
+                                                    .setScale(2, RoundingMode.HALF_EVEN)
+                                                    .toDouble()
+                                            }
+                                        )
+                                    }
+
                                     methodMenuExpanded = false
                                 },
                                     modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
@@ -286,30 +345,94 @@ fun GroupExpenseScreen(
                 ) {
                     when (vm.method) {
                         Method.EQUALLY -> {
-                            Text("${NumberFormat.getCurrencyInstance().format(amountPerPerson)}/persona",
-                                style = AppTypography.titleMedium.copy(color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                stringResource(
+                                    R.string.x_per_person,
+                                    NumberFormat.getCurrencyInstance().format(vm.amountPerPerson)
+                                ),
+                                style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary)
                             )
                             Text(
-                                "(${selectedFriends.size} ${if (selectedFriends.size > 1) "personas" else "persona"})",
-                                style = AppTypography.bodySmall
+                                if (vm.selectedMembers.size == 1) stringResource(
+                                    R.string.one_person,
+                                    vm.selectedMembers.size
+                                ) else stringResource(
+                                    R.string.x_people,
+                                    vm.selectedMembers.size
+                                ),
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
 
                         Method.PERCENTAGES -> {
-
+                            val percentageSum = vm.percentages.values.sum()
+                            val remainingPercentage = 100 - percentageSum
+                            val exceeded = percentageSum - 100
+                            Text(
+                                stringResource(R.string.x_of_y, "$percentageSum%", "100%"),
+                                style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary)
+                            )
+                            if (percentageSum <= 100.0) {
+                                Text(
+                                    stringResource(
+                                        R.string.remaining_x,
+                                        "$remainingPercentage%"
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            } else {
+                                Text(
+                                    stringResource(
+                                        R.string.x_exceeded,
+                                        "$exceeded%"
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error)
+                                )
+                            }
                         }
 
                         Method.CUSTOM -> {
-
+                            val amount = vm.amount.toDoubleOrNull() ?: 0.0
+                            val quantitiesSum = vm.quantities.values.sum()
+                            val remainingQuantity = (amount - quantitiesSum).toBigDecimal()
+                                .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                            val exceeded = (quantitiesSum - amount).toBigDecimal()
+                                .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                            Text(
+                                stringResource(R.string.x_of_y, "$$quantitiesSum", "$$amount"),
+                                style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary)
+                            )
+                            if (quantitiesSum <= amount)
+                                Text(
+                                    stringResource(
+                                        R.string.remaining_x,
+                                        "$$remainingQuantity"
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            else Text(
+                                stringResource(
+                                    R.string.x_exceeded,
+                                    "$$exceeded"
+                                ),
+                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error)
+                            )
                         }
                     }
                 }
                 vm.members.forEach { friend ->
-                    var percentage by remember { mutableStateOf("0") }
-                    var quantity by remember { mutableStateOf("") }
-
+                    val friendQuantity = vm.percentages[friend.uuid]!!
+                    var percentage by remember { mutableStateOf(friendQuantity.toString()) }
+                    var quantity by remember { mutableStateOf(vm.quantities[friend.uuid]!!.toString()) }
+                    val amount = vm.amount.toDoubleOrNull() ?: 0.0
                     FriendItem(
                         headline = friend.name,
+                        supporting = when (vm.method) {
+                            Method.PERCENTAGES -> "$" + (amount * friendQuantity / 100).toBigDecimal()
+                                .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+
+                            else -> ""
+                        },
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface,
                             contentColor = MaterialTheme.colorScheme.onSurface
@@ -317,58 +440,102 @@ fun GroupExpenseScreen(
                         trailingContent = {
                             when (vm.method) {
                                 Method.EQUALLY -> Checkbox(
-                                    checked = friend.uuid in selectedFriends,
+                                    checked = friend.uuid in vm.selectedMembers,
                                     onCheckedChange = {
-                                        selectedFriends = if (it) selectedFriends + friend.uuid
-                                        else selectedFriends - friend.uuid
+                                        vm.updateSelectedMembers(
+                                            if (it) vm.selectedMembers + friend.uuid
+                                            else vm.selectedMembers - friend.uuid
+                                        )
 
-                                        amountPerPerson = (vm.amount.toDoubleOrNull()
-                                            ?: 0.0) / selectedFriends.size
+                                        vm.updateAmountPerPerson(
+                                            if (vm.selectedMembers.isEmpty()) 0.0 else {
+                                                ((vm.amount.toDoubleOrNull()
+                                                    ?: 0.0) / vm.selectedMembers.size).toBigDecimal()
+                                                    .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                                            }
+                                        )
                                     })
 
-                                Method.PERCENTAGES -> TextField(
-                                    value = percentage,
-                                    onValueChange = { percentage = it },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    singleLine = true,
-                                    shape = ShapeDefaults.Medium,
-                                    trailingIcon = {
-                                        Icon(
-                                            Icons.Default.Percent,
-                                            contentDescription = "Percentage icon",
-                                            Modifier.size(16.dp)
-                                        )
-                                    },
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        focusedIndicatorColor = Color.Transparent,
-                                        unfocusedIndicatorColor = Color.Transparent,
-                                    ),
-                                    modifier = Modifier.width(80.dp)
-                                )
+                                Method.PERCENTAGES -> Row(
+                                    horizontalArrangement = Arrangement.spacedBy(
+                                        8.dp
+                                    ), verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    BasicTextField(
+                                        value = percentage,
+                                        onValueChange = {
+                                            if (it.isEmpty()) {
+                                                percentage = ""
+                                                vm.updatePercentages(vm.percentages.mapValues { (key, value) ->
+                                                    if (key == friend.uuid) 0
+                                                    else value
+                                                })
+                                            } else {
+                                                val input = it.toIntOrNull()
+                                                if (input != null && input in 0..100) {
+                                                    percentage = it
+                                                    vm.updatePercentages(vm.percentages.mapValues { (key, value) ->
+                                                        if (key == friend.uuid) input
+                                                        else value
+                                                    })
+                                                }
+                                            }
+                                        },
+                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        ),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        singleLine = true,
+                                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier
+                                            .width(60.dp)
+                                            .height(40.dp)
+                                            .clip(ShapeDefaults.Medium)
+                                            .background(MaterialTheme.colorScheme.primaryContainer)
+                                            .padding(vertical = 10.dp)
+                                    )
+                                    Text(
+                                        text = "%",
+                                        style = AppTypography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurface)
+                                    )
+                                }
 
-                                Method.CUSTOM -> TextField(
-                                    value = quantity,
-                                    onValueChange = { quantity = it },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    singleLine = true,
-                                    shape = ShapeDefaults.Medium,
-                                    trailingIcon = {
-                                        Icon(
-                                            Icons.Default.AttachMoney,
-                                            contentDescription = "Money icon",
-                                            Modifier.size(16.dp)
-                                        )
-                                    },
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        focusedIndicatorColor = Color.Transparent,
-                                        unfocusedIndicatorColor = Color.Transparent,
-                                    ),
-                                    modifier = Modifier.width(80.dp)
-                                )
+                                Method.CUSTOM -> Row(
+                                    horizontalArrangement = Arrangement.spacedBy(
+                                        8.dp
+                                    ), verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "$",
+                                        style = AppTypography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurface)
+                                    )
+                                    BasicTextField(
+                                        value = quantity,
+                                        onValueChange = {
+                                            validateQuantity(it) { res ->
+                                                quantity = res
+                                                vm.updateQuantities(vm.quantities.mapValues { (key, value) ->
+                                                    if (key == friend.uuid) if (res.isEmpty()) 0.0 else res.toDouble()
+                                                    else value
+                                                })
+                                            }
+                                        },
+                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        ),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        singleLine = true,
+                                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier
+                                            .width(60.dp)
+                                            .height(40.dp)
+                                            .clip(ShapeDefaults.Medium)
+                                            .background(MaterialTheme.colorScheme.primaryContainer)
+                                            .padding(vertical = 10.dp)
+                                    )
+                                }
                             }
                         }
                     )

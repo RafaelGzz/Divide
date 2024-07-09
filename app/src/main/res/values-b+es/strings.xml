@@ -100,4 +100,13 @@
     <string name="select_who_pays">Selecciona quienes deben pagar:</string>
     <string name="indicate_percentages">Indica el porcentaje de cada miembro:</string>
     <string name="indicate_quantities">Indica cuanto debe pagar cada miembro:</string>
+    <string name="x_per_person">%1$s/persona</string>
+    <string name="x_people">(%1$s personas)</string>
+    <string name="one_person">(1 persona)</string>
+    <string name="remaining_x">Restante: %1$s</string>
+    <string name="x_of_y">%1$s de %2$s</string>
+    <string name="x_exceeded">%1$s excedido</string>
+    <string name="one_person_must_be_selected">Al menos una persona debe ser seleccionada</string>
+    <string name="percentages_sum_must_be_100">Suma de porcentajes debe ser 100%</string>
+    <string name="quantities_sum_must_be_amount">Suma de cantidades debe ser igual a %1$s</string>
 </resources>

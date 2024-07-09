@@ -13,7 +13,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.ragl.divide.BuildConfig
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
-import com.ragl.divide.ui.Screen
+import com.ragl.divide.ui.utils.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

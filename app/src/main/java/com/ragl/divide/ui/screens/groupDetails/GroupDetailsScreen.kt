@@ -89,7 +89,8 @@ fun GroupDetailsScreen(
     editGroup: (String) -> Unit,
     onBackClick: () -> Unit,
     onAddExpenseClick: () -> Unit,
-    onAddPaymentClick: () -> Unit
+    onAddPaymentClick: () -> Unit,
+    onExpenseClick: (String) -> Unit
 ) {
     BackHandler {
         onBackClick()
@@ -129,43 +130,11 @@ fun GroupDetailsScreen(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    if (group.image.isNotEmpty()) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(group.image)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(60.dp)
-                                .clip(CircleShape)
-                        )
-                    } else {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .size(60.dp)
-                                .background(MaterialTheme.colorScheme.primary)
-                        )
-                    }
-                    Text(
-                        group.name,
-                        style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary),
-                        softWrap = true,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    )
-                }
+
+                GroupImageAndTitleRow(group)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 if (groupState.expenses.isEmpty()) {
                     Text(
                         text = stringResource(R.string.group_no_expenses),
@@ -174,10 +143,12 @@ fun GroupDetailsScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+
                 ExpenseListView(
                     expensesAndPayments = groupDetailsViewModel.expensesAndPayments,
                     modifier = Modifier.weight(1f),
                     getPaidByNames = groupDetailsViewModel::getPaidByNames,
+                    onExpenseClick = onExpenseClick,
                     members = members
                 )
             }
@@ -186,11 +157,53 @@ fun GroupDetailsScreen(
 }
 
 @Composable
+private fun GroupImageAndTitleRow(group: Group) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (group.image.isNotEmpty()) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(group.image)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+            )
+        } else {
+            Image(
+                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(60.dp)
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+        }
+        Text(
+            group.name,
+            style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary),
+            softWrap = true,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+        )
+    }
+}
+
+@Composable
 private fun ExpenseListView(
     modifier: Modifier = Modifier,
     expensesAndPayments: List<Any>,
     getPaidByNames: (List<String>) -> String,
-    members: List<User>
+    members: List<User>,
+    onExpenseClick: (String) -> Unit
 ) {
     val expensesByMonth = expensesAndPayments.groupBy {
         when (it) {
@@ -221,7 +234,8 @@ private fun ExpenseListView(
                 month = month,
                 expensesAndPayments = expensesByMonth[month] ?: emptyList(),
                 getPaidByNames = getPaidByNames,
-                members = members
+                members = members,
+                onExpenseClick = onExpenseClick
             )
         }
     }
@@ -232,13 +246,14 @@ private fun MonthSection(
     month: String,
     expensesAndPayments: List<Any>,
     getPaidByNames: (List<String>) -> String,
-    members: List<User>
+    members: List<User>,
+    onExpenseClick: (String) -> Unit
 ) {
     Column {
         Text(
             text = month,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier.padding(vertical = 8.dp)
         )
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -253,7 +268,8 @@ private fun MonthSection(
                 GroupExpenseItem(
                     expenseOrPayment = expense,
                     getPaidByNames = getPaidByNames,
-                    members = members
+                    members = members,
+                    onExpenseClick = onExpenseClick
                 )
             }
         }
@@ -264,7 +280,8 @@ private fun MonthSection(
 private fun GroupExpenseItem(
     expenseOrPayment: Any,
     getPaidByNames: (List<String>) -> String,
-    members: List<User>
+    members: List<User>,
+    onExpenseClick: (String) -> Unit
 ) {
     val dateFormatter = SimpleDateFormat("MMM\ndd", Locale.getDefault())
     val formattedDate = dateFormatter.format(
@@ -280,7 +297,9 @@ private fun GroupExpenseItem(
             .fillMaxWidth()
             .clip(ShapeDefaults.Medium)
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .clickable { },
+            .clickable {
+                if(expenseOrPayment is GroupExpense) onExpenseClick(expenseOrPayment.id)
+            },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

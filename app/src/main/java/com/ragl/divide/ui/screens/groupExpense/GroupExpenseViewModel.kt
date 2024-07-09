@@ -1,6 +1,7 @@
 package com.ragl.divide.ui.screens.groupExpense
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -41,6 +42,14 @@ class GroupExpenseViewModel @Inject constructor(
         private set
     var method by mutableStateOf(Method.EQUALLY)
         private set
+    var selectedMembers by mutableStateOf<List<String>>(listOf())
+        private set
+    var quantities by mutableStateOf<Map<String, Double>>(emptyMap())
+        private set
+    var percentages by mutableStateOf<Map<String, Int>>(emptyMap())
+        private set
+    var amountPerPerson by mutableDoubleStateOf(0.0)
+        private set
 
     fun updateTitle(title: String) {
         this.title = title
@@ -57,22 +66,66 @@ class GroupExpenseViewModel @Inject constructor(
     fun updateMethod(method: Method) {
         this.method = method
     }
+    fun updateQuantities(quantities: Map<String, Double>) {
+        this.quantities = quantities
+    }
 
-    fun setGroup(group: Group, userId: String, members: List<User>) {
+    fun updatePercentages(percentages: Map<String, Int>) {
+        this.percentages = percentages
+    }
+
+    fun updateAmountPerPerson(amountPerPerson: Double) {
+        this.amountPerPerson = amountPerPerson
+    }
+
+    fun updateSelectedMembers(selectedMembers: List<String>) {
+        this.selectedMembers = selectedMembers
+    }
+
+    fun setGroupAndExpense(group: Group, userId: String, members: List<User>, expense: GroupExpense) {
         viewModelScope.launch {
-            _group.update {
-                group
+            if(expense.id.isNotEmpty()){
+                _expense.update { expense }
+                title = expense.title
+                amount = expense.amount.let { if(it == 0.0) "" else it.toString() }
+                paidBy = members.firstOrNull { it.uuid == expense.paidBy.keys.first() }!!
+                method = expense.splitMethod
+
+                when (expense.splitMethod) {
+                    Method.EQUALLY -> {
+                        selectedMembers = expense.debtors.keys.toList()
+                        amountPerPerson = expense.debtors.values.first()
+                        percentages = members.associate { it.uuid to 0 }
+                        quantities = members.associate { it.uuid to 0.0 }
+                    }
+                    Method.PERCENTAGES -> {
+                        selectedMembers = expense.debtors.keys.toList()
+                        quantities = members.associate { it.uuid to 0.0 }
+                        percentages = expense.debtors.mapValues { it.value.toInt() }
+                    }
+                    Method.CUSTOM -> {
+                        selectedMembers = expense.debtors.keys.toList()
+                        percentages = members.associate { it.uuid to 0 }
+                        quantities = expense.debtors
+                    }
+                }
+            } else {
+                selectedMembers = members.map { it.uuid }
+                percentages = members.associate { it.uuid to 0 }
+                quantities = members.associate { it.uuid to 0.0 }
             }
+
+            _group.update { group }
             updateMembers(members)
             paidBy = members.first { it.uuid == userId }
         }
     }
 
-    fun updateMembers(members: List<User>) {
+    private fun updateMembers(members: List<User>) {
         this.members = members
     }
 
-    private fun validateTitle(): Boolean {
+    fun validateTitle(): Boolean {
         return when (title.trim()) {
             "" -> {
                 this.titleError = "Title is required"
@@ -86,7 +139,7 @@ class GroupExpenseViewModel @Inject constructor(
         }
     }
 
-    private fun validateAmount(): Boolean {
+    fun validateAmount(): Boolean {
         if (amount.isEmpty()) {
             this.amountError = "Amount is required"
             return false
@@ -106,18 +159,77 @@ class GroupExpenseViewModel @Inject constructor(
         return true
     }
 
-    fun saveExpense(onSuccess: (GroupExpense) -> Unit, onError: (String) -> Unit) {
+    fun saveEquallyExpense(
+        onSuccess: (GroupExpense) -> Unit,
+        onError: (String) -> Unit
+    ) {
         try {
             if (validateTitle() && validateAmount()) {
+                val expense = _expense.value.copy(
+                    title = title,
+                    amount = amount.toDouble(),
+                    paidBy = mapOf(paidBy.uuid to amount.toDouble()),
+                    splitMethod = method,
+                    debtors = selectedMembers.associateWith { amountPerPerson }
+                )
                 viewModelScope.launch {
                     val savedExpense = groupRepository.saveExpense(
                         groupId = _group.value.id,
-                        _expense.value.copy(
-                            title = title,
-                            amount = amount.toDouble(),
-                            paidBy = mapOf(paidBy.uuid to amount),
-                            splitMethod = method
-                        )
+                        expense = expense
+                    )
+                    onSuccess(savedExpense)
+                }
+            }
+        } catch (e: Exception) {
+            onError(e.message.toString())
+        }
+    }
+
+    fun savePercentageExpense(
+        onSuccess: (GroupExpense) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        try {
+            if (validateTitle() && validateAmount()) {
+                val expense = _expense.value.copy(
+                    title = title,
+                    amount = amount.toDouble(),
+                    paidBy = mapOf(paidBy.uuid to amount.toDouble()),
+                    splitMethod = method,
+                    debtors = percentages.mapValues {
+                        it.value.toDouble()
+                    }
+                )
+                viewModelScope.launch {
+                    val savedExpense = groupRepository.saveExpense(
+                        groupId = _group.value.id,
+                        expense = expense
+                    )
+                    onSuccess(savedExpense)
+                }
+            }
+        } catch (e: Exception) {
+            onError(e.message.toString())
+        }
+    }
+
+    fun saveCustomExpense(
+        onSuccess: (GroupExpense) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        try {
+            if (validateTitle() && validateAmount()) {
+                val expense = _expense.value.copy(
+                    title = title,
+                    amount = amount.toDouble(),
+                    paidBy = mapOf(paidBy.uuid to amount.toDouble()),
+                    splitMethod = method,
+                    debtors = quantities
+                )
+                viewModelScope.launch {
+                    val savedExpense = groupRepository.saveExpense(
+                        groupId = _group.value.id,
+                        expense = expense
                     )
                     onSuccess(savedExpense)
                 }

@@ -10,6 +10,6 @@ data class GroupExpense(
     override val notes: String = "",
     override val addedDate: Long = Date().time,
     val splitMethod: Method = Method.EQUALLY,
-    val paidBy: Map<String, String> = emptyMap(),
-    val debtors: Map<String, String> = emptyMap(),
+    val paidBy: Map<String, Double> = emptyMap(),
+    val debtors: Map<String, Double> = emptyMap(),
 ): IExpense

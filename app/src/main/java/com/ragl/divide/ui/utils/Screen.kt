@@ -1,4 +1,4 @@
-package com.ragl.divide.ui
+package com.ragl.divide.ui.utils
 
 import kotlinx.serialization.Serializable
 
@@ -20,9 +20,9 @@ sealed class Screen(val route: String) {
     @Serializable
     data class GroupDetails(val groupId: String = "") : Screen("GroupDetails")
     @Serializable
-    data class GroupExpense(val groupId: String = "") : Screen("GroupExpense")
+    data class GroupExpense(val groupId: String = "", val expenseId: String = "") : Screen("GroupExpense")
     @Serializable
-    data class GroupExpenseDetails(val expenseId: String = "") : Screen("GroupExpenseDetails")
+    data class GroupExpenseDetails(val groupId: String = "", val expenseId: String = "") : Screen("GroupExpenseDetails")
     @Serializable
     data object AddFriends: Screen("AddFriends")
 

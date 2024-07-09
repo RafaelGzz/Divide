@@ -15,7 +15,7 @@ import com.ragl.divide.data.repositories.FriendsRepository
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
-import com.ragl.divide.ui.Screen
+import com.ragl.divide.ui.utils.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
