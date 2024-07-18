@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupUser
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.GroupRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,7 +35,7 @@ class GroupDetailsViewModel @Inject constructor(
     var members by mutableStateOf<List<User>>(listOf())
         private set
 
-    var userId by mutableStateOf("")
+    var groupUser by mutableStateOf(GroupUser())
         private set
 
     fun setGroup(group: Group, userId: String, members: List<User>) {
@@ -42,7 +43,7 @@ class GroupDetailsViewModel @Inject constructor(
         _group.update {
             group
         }
-        updateUserId(userId)
+        this.groupUser = group.users[userId]!!
         updateMembers(members)
         updateExpensesAndPayments(group.expenses.values.toList() + group.payments.values.toList())
 
@@ -52,10 +53,6 @@ class GroupDetailsViewModel @Inject constructor(
         return paidBy.map { uid ->
             members.find { it.uuid == uid }?.name
         }.joinToString(", ") // Une los nombres con comas
-    }
-
-    private fun updateUserId(userId: String) {
-        this.userId = userId
     }
 
     private fun updateMembers(members: List<User>) {

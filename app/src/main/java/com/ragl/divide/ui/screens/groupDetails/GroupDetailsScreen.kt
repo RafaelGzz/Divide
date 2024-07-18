@@ -61,9 +61,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -100,6 +103,8 @@ fun GroupDetailsScreen(
     }
     val groupState by groupDetailsViewModel.group.collectAsState()
 
+    val groupUser = groupDetailsViewModel.groupUser
+
     Scaffold(
         topBar = {
             GroupDetailsAppBar(
@@ -132,6 +137,19 @@ fun GroupDetailsScreen(
             ) {
 
                 GroupImageAndTitleRow(group)
+
+                if (groupUser.owed != 0.0) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        buildAnnotatedString {
+                            append("Te deben en general: ")
+                            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                                append(NumberFormat.getCurrencyInstance().format(groupUser.owed))
+                            }
+                        },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -298,7 +316,7 @@ private fun GroupExpenseItem(
             .clip(ShapeDefaults.Medium)
             .background(MaterialTheme.colorScheme.primaryContainer)
             .clickable {
-                if(expenseOrPayment is GroupExpense) onExpenseClick(expenseOrPayment.id)
+                if (expenseOrPayment is GroupExpense) onExpenseClick(expenseOrPayment.id)
             },
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -502,36 +520,7 @@ fun CustomFloatingActionButton(
                 modifier = Modifier
                     .size(24.dp)
                     .rotate(rotation)
-//                    .offset(
-//                        x = animateDpAsState(
-//                            if (isExpanded) (-70).dp else 0.dp,
-//                            animationSpec = spring(dampingRatio = 2f), label = "iconOffset"
-//                        ).value
-//                    )
             )
-
-//            Text(
-//                text = "Create Reminder",
-//                softWrap = false,
-//                modifier = Modifier
-//                    .offset(
-//                        x = animateDpAsState(
-//                            if (isExpanded) 10.dp else 50.dp,
-//                            animationSpec = spring(dampingRatio = 2f), label = "textOffset"
-//                        ).value
-//                    )
-//                    .alpha(
-//                        animateFloatAsState(
-//                            targetValue = if (isExpanded) 1f else 0f,
-//                            animationSpec = tween(
-//                                durationMillis = if (isExpanded) 350 else 100,
-//                                delayMillis = if (isExpanded) 100 else 0,
-//                                easing = EaseIn
-//                            ), label = "textAlpha"
-//                        ).value
-//                    )
-//            )
-
         }
     }
 }

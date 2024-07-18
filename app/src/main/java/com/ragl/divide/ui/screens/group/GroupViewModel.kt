@@ -1,7 +1,6 @@
 package com.ragl.divide.ui.screens.group
 
 import android.net.Uri
-import android.system.Os.remove
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupUser
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.GroupRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -49,7 +49,7 @@ class GroupViewModel @Inject constructor(
 
     fun addUser(userId: String) {
         _group.update {
-            it.copy(users = it.users + (userId to userId))
+            it.copy(users = it.users + (userId to GroupUser(id = userId)))
         }
     }
 
@@ -59,7 +59,7 @@ class GroupViewModel @Inject constructor(
 
     fun removeUser(userId: String) {
         _group.update {
-            it.copy(users = it.users.apply { remove(userId) })
+            it.copy(users = it.users - userId)
         }
     }
 
@@ -74,7 +74,7 @@ class GroupViewModel @Inject constructor(
         }
     }
 
-    fun updateMembers(members: List<User>) {
+    private fun updateMembers(members: List<User>) {
         this.members = members
     }
 
@@ -109,8 +109,8 @@ class GroupViewModel @Inject constructor(
             _group.update {
                 it.copy(
                     name = it.name.trim(),
-                    users = it.users + members.associate { member -> member.uuid to member.uuid }
-                        .filter { member -> member.value !in it.users }
+                    users = it.users + members.associate { member -> member.uuid to GroupUser(id = member.uuid) }
+                        .filter { member -> member.value.id !in it.users.keys }
                 )
             }
             viewModelScope.launch {

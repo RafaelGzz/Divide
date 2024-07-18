@@ -309,7 +309,8 @@ fun DivideApp(
             ) {
                 val args: Screen.GroupExpenseDetails = it.toRoute()
                 GroupExpenseDetailsScreen(
-                    groupExpense = user.groups[args.groupId]!!.expenses[args.expenseId]!!,
+                    groupExpense = user.groups[args.groupId]!!.expenses[args.expenseId] ?: GroupExpense(),
+                    groupId = args.groupId,
                     members = user.selectedGroupMembers,
                     onBackClick = { navController.navigateUp() },
                     onEditClick = { expenseId ->
@@ -319,6 +320,10 @@ fun DivideApp(
                                 expenseId = expenseId
                             )
                         )
+                    },
+                    onDeleteExpense = {
+                        userViewModel.removeGroupExpense(args.groupId, args.expenseId)
+                        navController.navigateUp()
                     }
                 )
             }

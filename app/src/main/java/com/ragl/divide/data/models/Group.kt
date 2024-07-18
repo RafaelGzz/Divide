@@ -6,5 +6,5 @@ data class Group(
     val image: String = "",
     val expenses: Map<String, GroupExpense> = emptyMap(),
     val payments: Map<String, Payment> = emptyMap(),
-    val users: Map<String, String> = emptyMap(),
+    val users: Map<String, GroupUser> = emptyMap(),
 )

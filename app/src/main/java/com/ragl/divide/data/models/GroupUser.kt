@@ -4,6 +4,6 @@ data class GroupUser(
     val id: String = "",
     val expenses: Map<String, Double> = emptyMap(),
     val payments: Map<String, Double> = emptyMap(),
-    val owed: Double = 0.0,
-    val debt: Double = 0.0,
+    var owed: Double = 0.0,
+    var debt: Double = 0.0,
 )

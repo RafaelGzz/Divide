@@ -161,7 +161,7 @@ class UserViewModel @Inject constructor(
             viewModelScope.launch {
                 selectedGroupId = group.id
                 isLoadingMembers = true
-                val users = groupRepository.getUsers(group.users.values.toList())
+                val users = groupRepository.getUsers(group.users.values.map { it.id })
                 _user.update {
                     it.copy(selectedGroupMembers = users)
                 }
@@ -175,6 +175,20 @@ class UserViewModel @Inject constructor(
                 groups = it.groups.mapValues { group ->
                     if (group.key == groupId) {
                         group.value.copy(expenses = group.value.expenses + (expense.id to expense))
+                    } else {
+                        group.value
+                    }
+                }
+            )
+        }
+    }
+
+    fun removeGroupExpense(groupId: String, expenseId: String) {
+        _user.update {
+            it.copy(
+                groups = it.groups.mapValues { group ->
+                    if (group.key == groupId) {
+                        group.value.copy(expenses = group.value.expenses - expenseId)
                     } else {
                         group.value
                     }

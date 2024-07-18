@@ -104,7 +104,7 @@ fun HomeScreen(
 
     val user by vm.user.collectAsState()
     val friends = remember(user.friends) {
-        user.friends.values.toList().sortedBy { it.name }
+        user.friends.values.toList().sortedBy { it.name.lowercase() }
     }
     val expenses = remember(user.expenses) {
         user.expenses.values.toList().sortedBy { it.id }

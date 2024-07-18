@@ -199,6 +199,7 @@ fun Context.createImageFile(): File {
 @Composable
 fun FriendItem(
     modifier: Modifier = Modifier,
+    hasLeadingContent: Boolean = true,
     headline: String,
     supporting: String = "",
     photoUrl: String = "",
@@ -213,13 +214,20 @@ fun FriendItem(
 ) {
     val interactionSource by remember { mutableStateOf(MutableInteractionSource()) }
     val supportingContent: @Composable (() -> Unit)? = if (supporting.isNotEmpty()) {
-        @Composable { Text(text = supporting, style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))) }
+        @Composable {
+            Text(
+                text = supporting,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                )
+            )
+        }
     } else {
         null
     }
     Card(
         modifier = modifier
-            .clickable(interactionSource = interactionSource, indication = null){
+            .clickable(interactionSource = interactionSource, indication = null) {
                 if (onClick != null) {
                     onClick()
                 }
@@ -228,46 +236,58 @@ fun FriendItem(
         colors = colors
     ) {
         ListItem(
-            modifier = Modifier.padding(vertical = 4.dp),
+            modifier = if(hasLeadingContent) Modifier.padding(vertical = 4.dp) else Modifier,
             colors = ListItemDefaults.colors(
                 containerColor = Color.Transparent,
             ),
             headlineContent = {
                 Text(
                     text = headline,
-                    color = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    color = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary.copy(
+                        alpha = 0.5f
+                    ),
                     overflow = TextOverflow.Ellipsis,
                     softWrap = true
                 )
             },
             supportingContent = supportingContent,
-            leadingContent = {
-                if (photoUrl.isNotEmpty()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(photoUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentScale = ContentScale.Crop,
-                        contentDescription = null,
-                        alpha = if (enabled) 1f else 0.5f,
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                    )
-                } else {
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        tint = if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                        modifier = Modifier
-                            .padding(vertical = if (supporting.isNotEmpty()) 0.dp else 2.dp)
-                            .clip(CircleShape)
-                            .size(52.dp)
-                            .background(if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                            .padding(12.dp)
-                    )
+            leadingContent = if (hasLeadingContent) {
+                {
+                    if (photoUrl.isNotEmpty()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(photoUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentScale = ContentScale.Crop,
+                            contentDescription = null,
+                            alpha = if (enabled) 1f else 0.5f,
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Icon(
+                            icon,
+                            contentDescription = null,
+                            tint = if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(
+                                alpha = 0.5f
+                            ),
+                            modifier = Modifier
+                                .padding(vertical = if (supporting.isNotEmpty()) 0.dp else 2.dp)
+                                .clip(CircleShape)
+                                .size(52.dp)
+                                .background(
+                                    if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(
+                                        alpha = 0.5f
+                                    )
+                                )
+                                .padding(12.dp)
+                        )
+                    }
                 }
+            } else {
+                null
             },
             trailingContent = trailingContent
         )

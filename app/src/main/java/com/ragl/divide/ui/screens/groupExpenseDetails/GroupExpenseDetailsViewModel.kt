@@ -1,12 +1,14 @@
 package com.ragl.divide.ui.screens.groupExpenseDetails
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.repositories.GroupRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,6 +22,17 @@ class GroupExpenseDetailsViewModel @Inject constructor(
     fun setGroupExpense(groupExpense: GroupExpense) {
         _groupExpense.update {
             groupExpense
+        }
+    }
+
+    fun deleteExpense(groupId: String, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                groupRepository.deleteExpense(groupId, groupExpense.value)
+                onSuccess(groupId)
+            } catch (e: Exception) {
+                onError(e.message ?: "An error occurred")
+            }
         }
     }
 

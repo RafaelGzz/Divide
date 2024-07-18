@@ -109,4 +109,6 @@
     <string name="one_person_must_be_selected">Al menos una persona debe ser seleccionada</string>
     <string name="percentages_sum_must_be_100">Suma de porcentajes debe ser 100%</string>
     <string name="quantities_sum_must_be_amount">Suma de cantidades debe ser igual a %1$s</string>
+    <string name="paid_x">pagó %1$s</string>
+    <string name="owes_x">debe %1$s</string>
 </resources>
