@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupExpense
+import com.ragl.divide.data.models.GroupUser
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.FriendsRepository
@@ -181,19 +182,139 @@ class UserViewModel @Inject constructor(
                 }
             )
         }
+        expense.paidBy.entries.forEach { (payerId, amount) ->
+            val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(payerId)!!
+            //groupUser.totalOwed += amount
+            val newOwedMap = groupUser.owed.toMutableMap()
+            expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
+                newOwedMap[debtorId] = (newOwedMap[debtorId] ?: 0.0) + debtorAmount
+            }
+            _user.update {
+                it.copy(
+                    groups = it.groups.mapValues { group ->
+                        if (group.key == groupId) {
+                            group.value.copy(
+                                users = group.value.users.mapValues { user ->
+                                    if (user.key == payerId) {
+                                        user.value.copy(
+                                            owed = newOwedMap,
+                                            totalOwed = user.value.totalOwed + amount
+                                        )
+                                    } else {
+                                        user.value
+                                    }
+                                }
+                            )
+                        } else {
+                            group.value
+                        }
+                    }
+                )
+            }
+        }
+        expense.debtors.entries.forEach { (debtorId, amount) ->
+            val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(debtorId)!!
+            //groupUser.totalDebt += amount
+            val newDebtsMap = groupUser.debts.toMutableMap()
+            expense.paidBy.keys.forEach { payerId ->
+                newDebtsMap[payerId] = (newDebtsMap[payerId] ?: 0.0) + amount
+            }
+            _user.update {
+                it.copy(
+                    groups = it.groups.mapValues { group ->
+                        if (group.key == groupId) {
+                            group.value.copy(
+                                users = group.value.users.mapValues { user ->
+                                    if (user.key == debtorId) {
+                                        user.value.copy(
+                                            debts = newDebtsMap,
+                                            totalDebt = user.value.totalDebt + amount
+                                        )
+                                    } else {
+                                        user.value
+                                    }
+                                }
+                            )
+                        } else {
+                            group.value
+                        }
+                    }
+                )
+            }
+        }
     }
 
-    fun removeGroupExpense(groupId: String, expenseId: String) {
+    fun removeGroupExpense(groupId: String, groupExpense: GroupExpense) {
         _user.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
                     if (group.key == groupId) {
-                        group.value.copy(expenses = group.value.expenses - expenseId)
+                        group.value.copy(expenses = group.value.expenses - groupExpense.id)
                     } else {
                         group.value
                     }
                 }
             )
+        }
+        groupExpense.paidBy.entries.forEach { (payerId, amount) ->
+            val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(payerId)!!
+            //groupUser.totalOwed += amount
+            val newOwedMap = groupUser.owed.toMutableMap()
+            groupExpense.debtors.entries.forEach { (debtorId, debtorAmount) ->
+                newOwedMap[debtorId] = if( newOwedMap[debtorId] == null) 0.0 else (newOwedMap[debtorId]!! - debtorAmount)
+            }
+            _user.update {
+                it.copy(
+                    groups = it.groups.mapValues { group ->
+                        if (group.key == groupId) {
+                            group.value.copy(
+                                users = group.value.users.mapValues { user ->
+                                    if (user.key == payerId) {
+                                        user.value.copy(
+                                            owed = newOwedMap,
+                                            totalOwed = user.value.totalOwed - amount
+                                        )
+                                    } else {
+                                        user.value
+                                    }
+                                }
+                            )
+                        } else {
+                            group.value
+                        }
+                    }
+                )
+            }
+        }
+        groupExpense.debtors.entries.forEach { (debtorId, amount) ->
+            val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(debtorId)!!
+            //groupUser.totalDebt += amount
+            val newDebtsMap = groupUser.debts.toMutableMap()
+            groupExpense.paidBy.keys.forEach { payerId ->
+                newDebtsMap[payerId] = if( newDebtsMap[payerId] == null) 0.0 else (newDebtsMap[payerId]!! - amount)
+            }
+            _user.update {
+                it.copy(
+                    groups = it.groups.mapValues { group ->
+                        if (group.key == groupId) {
+                            group.value.copy(
+                                users = group.value.users.mapValues { user ->
+                                    if (user.key == debtorId) {
+                                        user.value.copy(
+                                            debts = newDebtsMap,
+                                            totalDebt = user.value.totalDebt - amount
+                                        )
+                                    } else {
+                                        user.value
+                                    }
+                                }
+                            )
+                        } else {
+                            group.value
+                        }
+                    }
+                )
+            }
         }
     }
 }

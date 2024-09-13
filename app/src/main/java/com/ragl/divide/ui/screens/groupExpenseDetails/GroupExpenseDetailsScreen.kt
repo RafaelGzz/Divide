@@ -54,7 +54,7 @@ fun GroupExpenseDetailsScreen(
     members: List<User>,
     onEditClick: (String) -> Unit,
     onBackClick: () -> Unit,
-    onDeleteExpense: (String) -> Unit
+    onDeleteExpense: (GroupExpense) -> Unit
 ) {
     LaunchedEffect(Unit) {
         groupExpenseDetailsViewModel.setGroupExpense(groupExpense)
@@ -160,7 +160,7 @@ fun GroupExpenseDetailsScreen(
                         Text(
                             text = stringResource(
                                 R.string.paid_x,
-                                NumberFormat.getCurrencyInstance().format(debt)
+                                NumberFormat.getCurrencyInstance().format(groupExpenseState.amount)
                             ),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodyMedium,

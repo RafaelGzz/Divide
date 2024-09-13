@@ -25,11 +25,11 @@ class GroupExpenseDetailsViewModel @Inject constructor(
         }
     }
 
-    fun deleteExpense(groupId: String, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
+    fun deleteExpense(groupId: String, onSuccess: (GroupExpense) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
                 groupRepository.deleteExpense(groupId, groupExpense.value)
-                onSuccess(groupId)
+                onSuccess(groupExpense.value)
             } catch (e: Exception) {
                 onError(e.message ?: "An error occurred")
             }

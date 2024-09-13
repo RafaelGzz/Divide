@@ -28,6 +28,7 @@ class GroupExpenseViewModel @Inject constructor(
 
     private val _expense = MutableStateFlow(GroupExpense())
     val expense = _expense.asStateFlow()
+    var userId by mutableStateOf("")
     var title by mutableStateOf("")
         private set
     var titleError by mutableStateOf("")
@@ -119,6 +120,7 @@ class GroupExpenseViewModel @Inject constructor(
             updateMembers(members)
             paidBy = members.first { it.uuid == userId }
         }
+        this.userId = userId
     }
 
     private fun updateMembers(members: List<User>) {
@@ -168,14 +170,15 @@ class GroupExpenseViewModel @Inject constructor(
                 val expense = _expense.value.copy(
                     title = title,
                     amount = amount.toDouble(),
-                    paidBy = mapOf(paidBy.uuid to amount.toDouble()),
+                    paidBy = if(paidBy.uuid in selectedMembers) mapOf(paidBy.uuid to amount.toDouble() - amountPerPerson) else mapOf(paidBy.uuid to amount.toDouble()),  //mapOf(paidBy.uuid to amount.toDouble() - amountPerPerson),
                     splitMethod = method,
-                    debtors = selectedMembers.associateWith { amountPerPerson }
+                    debtors = selectedMembers.associateWith { amountPerPerson }.filter { it.key != paidBy.uuid }
                 )
                 viewModelScope.launch {
                     val savedExpense = groupRepository.saveExpense(
                         groupId = _group.value.id,
-                        expense = expense
+                        expense = expense,
+                        currentUserId = userId
                     )
                     onSuccess(savedExpense)
                 }
@@ -198,12 +201,13 @@ class GroupExpenseViewModel @Inject constructor(
                     splitMethod = method,
                     debtors = percentages.mapValues {
                         it.value.toDouble()
-                    }
+                    }.filter { it.key != paidBy.uuid }
                 )
                 viewModelScope.launch {
                     val savedExpense = groupRepository.saveExpense(
                         groupId = _group.value.id,
-                        expense = expense
+                        expense = expense,
+                        currentUserId = userId
                     )
                     onSuccess(savedExpense)
                 }
@@ -224,12 +228,13 @@ class GroupExpenseViewModel @Inject constructor(
                     amount = amount.toDouble(),
                     paidBy = mapOf(paidBy.uuid to amount.toDouble()),
                     splitMethod = method,
-                    debtors = quantities
+                    debtors = quantities.filter { it.key != paidBy.uuid }
                 )
                 viewModelScope.launch {
                     val savedExpense = groupRepository.saveExpense(
                         groupId = _group.value.id,
-                        expense = expense
+                        expense = expense,
+                        currentUserId = userId
                     )
                     onSuccess(savedExpense)
                 }

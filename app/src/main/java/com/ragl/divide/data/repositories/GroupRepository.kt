@@ -22,7 +22,7 @@ interface GroupRepository {
     suspend fun getUsers(userIds: List<String>): List<User>
     suspend fun leaveGroup(groupId: String)
     suspend fun deleteGroup(groupId: String, image: String)
-    suspend fun saveExpense(groupId: String, expense: GroupExpense): GroupExpense
+    suspend fun saveExpense(groupId: String, expense: GroupExpense, currentUserId: String): GroupExpense
     suspend fun deleteExpense(groupId: String, expense: GroupExpense)
 }
 
@@ -116,25 +116,33 @@ class GroupRepositoryImpl(
         groupRef.removeValue().await()
     }
 
-    override suspend fun saveExpense(groupId: String, expense: GroupExpense): GroupExpense {
+    override suspend fun saveExpense(groupId: String, expense: GroupExpense, currentUserId: String): GroupExpense {
         val id = expense.id.ifEmpty { "id${Date().time}" }
         val savedExpense = expense.copy(id = id)
         val groupRef = database.getReference("groups/$groupId")
         groupRef.child("expenses").child(id).setValue(savedExpense).await()
 
-        coroutineScope { // Use coroutineScope for concurrent updates
-            expense.paidBy.entries.forEach { (userId, amount) ->
-                val userRef = groupRef.child("users").child(userId)
+        coroutineScope {
+            expense.paidBy.entries.forEach { (payerId, amount) ->
+                val userRef = groupRef.child("users").child(payerId)
                 val groupUser = userRef.get().await().getValue(GroupUser::class.java)!!
-                groupUser.owed += amount
-                userRef.setValue(groupUser) // Update user debt concurrently
+                //groupUser.totalOwed += amount
+                val newOwedMap = groupUser.owed.toMutableMap()
+                expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
+                    newOwedMap[debtorId] = (newOwedMap[debtorId] ?: 0.0) + debtorAmount
+                }
+                userRef.setValue(groupUser.copy(owed = newOwedMap, totalOwed = groupUser.totalOwed + amount)).await()
             }
-            expense.debtors.entries.forEach { (userId, amount) ->
+            expense.debtors.entries.forEach { (debtorId, amount) ->
                 launch {
-                    val userRef = groupRef.child("users").child(userId)
+                    val userRef = groupRef.child("users").child(debtorId)
                     val groupUser = userRef.get().await().getValue(GroupUser::class.java)!!
-                    groupUser.debt += amount
-                    userRef.setValue(groupUser) // Update user debt concurrently
+                    //groupUser.totalDebt += amount
+                    val newDebtsMap = groupUser.debts.toMutableMap()
+                    expense.paidBy.keys.forEach { payerId ->
+                        newDebtsMap[payerId] = (newDebtsMap[payerId] ?: 0.0) + amount
+                    }
+                    userRef.setValue(groupUser.copy(debts = newDebtsMap, totalDebt = groupUser.totalDebt + amount)).await()
                 }
             }
         }
@@ -149,15 +157,23 @@ class GroupRepositoryImpl(
             expense.paidBy.entries.forEach { (userId, amount) ->
                 val userRef = groupRef.child("users").child(userId)
                 val groupUser = userRef.get().await().getValue(GroupUser::class.java)!!
-                groupUser.owed -= amount
-                userRef.setValue(groupUser)
+                //groupUser.totalOwed -= amount
+                val newOwedMap = groupUser.owed.toMutableMap()
+                expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
+                    newOwedMap[debtorId] = if( newOwedMap[debtorId] == null) 0.0 else (newOwedMap[debtorId]!! - debtorAmount)
+                }
+                userRef.setValue(groupUser.copy(totalOwed = groupUser.totalOwed - amount, owed = newOwedMap))
             }
             expense.debtors.entries.forEach { (userId, amount) ->
                 launch {
                     val userRef = groupRef.child("users").child(userId)
                     val groupUser = userRef.get().await().getValue(GroupUser::class.java)!!
-                    groupUser.debt -= amount
-                    userRef.setValue(groupUser)
+                    //groupUser.totalDebt -= amount
+                    val newDebtsMap = groupUser.debts.toMutableMap()
+                    expense.paidBy.keys.forEach { payerId ->
+                        newDebtsMap[payerId] = if( newDebtsMap[payerId] == null) 0.0 else (newDebtsMap[payerId]!! - amount)
+                    }
+                    userRef.setValue(groupUser.copy(totalDebt = groupUser.totalDebt - amount, debts = newDebtsMap))
                 }
             }
         }

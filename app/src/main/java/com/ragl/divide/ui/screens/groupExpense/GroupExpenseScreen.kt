@@ -125,10 +125,10 @@ fun GroupExpenseScreen(
                         if (vm.validateTitle() && vm.validateAmount()) {
                             when (vm.method) {
                                 Method.EQUALLY -> {
-                                    if (vm.selectedMembers.isEmpty()) {
+                                    if (vm.selectedMembers.size < 2) {
                                         showToast(
                                             context,
-                                            context.getString(R.string.one_person_must_be_selected)
+                                            context.getString(R.string.two_people_must_be_selected)
                                         )
                                     } else {
                                         vm.saveEquallyExpense(
@@ -144,6 +144,11 @@ fun GroupExpenseScreen(
                                             context,
                                             context.getString(R.string.percentages_sum_must_be_100)
                                         )
+                                    } else if (vm.percentages.values.any { it == 100 }) {
+                                        showToast(
+                                            context,
+                                            context.getString(R.string.two_people_must_pay)
+                                        )
                                     } else {
                                         vm.savePercentageExpense(
                                             onSuccess = onSaveExpense,
@@ -153,7 +158,12 @@ fun GroupExpenseScreen(
                                 }
 
                                 Method.CUSTOM -> {
-                                    if (vm.quantities.values.sum() != (vm.amount.toDouble())) {
+                                    if (vm.quantities.values.any { it == vm.amount.toDouble() }) {
+                                        showToast(
+                                            context,
+                                            context.getString(R.string.two_people_must_pay)
+                                        )
+                                    } else if (vm.quantities.values.sum() != (vm.amount.toDouble())) {
                                         showToast(
                                             context,
                                             context.getString(
@@ -170,6 +180,7 @@ fun GroupExpenseScreen(
                                 }
                             }
                         }
+
                     },
                     shape = ShapeDefaults.Medium,
                     modifier = Modifier
@@ -268,7 +279,11 @@ fun GroupExpenseScreen(
                         }
                     }
                 }
-                AnimatedVisibility(vm.amount.toDoubleOrNull() != null, enter = fadeIn(), exit = fadeOut()) {
+                AnimatedVisibility(
+                    vm.amount.toDoubleOrNull() != null,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     Column {
                         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                             Text(
@@ -439,7 +454,7 @@ fun GroupExpenseScreen(
                             }
                         }
                         sortedMembers.forEach { friend ->
-                            val friendQuantity = vm.percentages[friend.uuid]!!
+                            val friendQuantity = vm.percentages[friend.uuid] ?: 0
                             var percentage by remember { mutableStateOf(friendQuantity.toString()) }
                             var quantity by remember { mutableStateOf(vm.quantities[friend.uuid]!!.toString()) }
                             val amount = vm.amount.toDoubleOrNull() ?: 0.0

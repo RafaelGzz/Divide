@@ -138,13 +138,24 @@ fun GroupDetailsScreen(
 
                 GroupImageAndTitleRow(group)
 
-                if (groupUser.owed != 0.0) {
+                if (groupUser.totalOwed != 0.0) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         buildAnnotatedString {
-                            append("Te deben en general: ")
+                            append(stringResource(R.string.owed_in_general))
                             withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                append(NumberFormat.getCurrencyInstance().format(groupUser.owed))
+                                append(NumberFormat.getCurrencyInstance().format(groupUser.totalOwed))
+                            }
+                        },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                if (groupUser.totalDebt != 0.0) {
+                    Text(
+                        buildAnnotatedString {
+                            append(stringResource(R.string.owe_in_general))
+                            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                                append(NumberFormat.getCurrencyInstance().format(groupUser.totalDebt))
                             }
                         },
                         style = MaterialTheme.typography.bodyMedium

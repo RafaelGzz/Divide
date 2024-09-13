@@ -295,6 +295,7 @@ fun DivideApp(
                     members = user.selectedGroupMembers,
                     onSaveExpense = { groupExpense ->
                         userViewModel.saveGroupExpense(args.groupId, groupExpense)
+                        //userViewModel.getUserData()
                         navController.navigateUp()
                     }
                 )
@@ -321,8 +322,8 @@ fun DivideApp(
                             )
                         )
                     },
-                    onDeleteExpense = {
-                        userViewModel.removeGroupExpense(args.groupId, args.expenseId)
+                    onDeleteExpense = {groupExpense ->
+                        userViewModel.removeGroupExpense(args.groupId, groupExpense)
                         navController.navigateUp()
                     }
                 )
