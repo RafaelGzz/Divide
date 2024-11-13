@@ -6,10 +6,12 @@ import com.google.firebase.storage.FirebaseStorage
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.GroupUser
+import com.ragl.divide.data.models.Method
 import com.ragl.divide.data.models.User
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.math.RoundingMode
 import java.util.Date
 
 interface GroupRepository {
@@ -22,7 +24,12 @@ interface GroupRepository {
     suspend fun getUsers(userIds: List<String>): List<User>
     suspend fun leaveGroup(groupId: String)
     suspend fun deleteGroup(groupId: String, image: String)
-    suspend fun saveExpense(groupId: String, expense: GroupExpense, currentUserId: String): GroupExpense
+    suspend fun saveExpense(
+        groupId: String,
+        expense: GroupExpense,
+        currentUserId: String
+    ): GroupExpense
+
     suspend fun deleteExpense(groupId: String, expense: GroupExpense)
 }
 
@@ -103,7 +110,7 @@ class GroupRepositoryImpl(
 
         val groupRef = database.getReference("groups/$groupId")
         val userIds = groupRef.child("users").get().await().children.mapNotNull {
-            it.getValue(String::class.java)
+            it.key
         }
         coroutineScope {
             userIds.forEach { userId ->
@@ -116,7 +123,11 @@ class GroupRepositoryImpl(
         groupRef.removeValue().await()
     }
 
-    override suspend fun saveExpense(groupId: String, expense: GroupExpense, currentUserId: String): GroupExpense {
+    override suspend fun saveExpense(
+        groupId: String,
+        expense: GroupExpense,
+        currentUserId: String
+    ): GroupExpense {
         val id = expense.id.ifEmpty { "id${Date().time}" }
         val savedExpense = expense.copy(id = id)
         val groupRef = database.getReference("groups/$groupId")
@@ -126,23 +137,43 @@ class GroupRepositoryImpl(
             expense.paidBy.entries.forEach { (payerId, amount) ->
                 val userRef = groupRef.child("users").child(payerId)
                 val groupUser = userRef.get().await().getValue(GroupUser::class.java)!!
-                //groupUser.totalOwed += amount
                 val newOwedMap = groupUser.owed.toMutableMap()
                 expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
-                    newOwedMap[debtorId] = (newOwedMap[debtorId] ?: 0.0) + debtorAmount
+                    val debt = when (expense.splitMethod) {
+                        Method.EQUALLY, Method.CUSTOM -> debtorAmount
+                        Method.PERCENTAGES -> (debtorAmount * expense.amount) / 100
+                    }
+                    newOwedMap[debtorId] = ((newOwedMap[debtorId] ?: 0.0) + debt).toBigDecimal()
+                        .setScale(2, RoundingMode.HALF_EVEN).toDouble()
                 }
-                userRef.setValue(groupUser.copy(owed = newOwedMap, totalOwed = groupUser.totalOwed + amount)).await()
+                userRef.setValue(
+                    groupUser.copy(
+                        owed = newOwedMap,
+                        totalOwed = (groupUser.totalOwed + amount).toBigDecimal()
+                            .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                    )
+                ).await()
             }
             expense.debtors.entries.forEach { (debtorId, amount) ->
                 launch {
                     val userRef = groupRef.child("users").child(debtorId)
                     val groupUser = userRef.get().await().getValue(GroupUser::class.java)!!
-                    //groupUser.totalDebt += amount
                     val newDebtsMap = groupUser.debts.toMutableMap()
-                    expense.paidBy.keys.forEach { payerId ->
-                        newDebtsMap[payerId] = (newDebtsMap[payerId] ?: 0.0) + amount
+                    val totalDebt = when (expense.splitMethod) {
+                        Method.EQUALLY, Method.CUSTOM -> amount
+                        Method.PERCENTAGES -> (amount * expense.amount) / 100
                     }
-                    userRef.setValue(groupUser.copy(debts = newDebtsMap, totalDebt = groupUser.totalDebt + amount)).await()
+                    expense.paidBy.keys.forEach { payerId ->
+                        newDebtsMap[payerId] = ((newDebtsMap[payerId] ?: 0.0) + totalDebt).toBigDecimal()
+                            .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                    }
+                    userRef.setValue(
+                        groupUser.copy(
+                            debts = newDebtsMap,
+                            totalDebt = (groupUser.totalDebt + totalDebt).toBigDecimal()
+                                .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                        )
+                    ).await()
                 }
             }
         }
@@ -157,23 +188,45 @@ class GroupRepositoryImpl(
             expense.paidBy.entries.forEach { (userId, amount) ->
                 val userRef = groupRef.child("users").child(userId)
                 val groupUser = userRef.get().await().getValue(GroupUser::class.java)!!
-                //groupUser.totalOwed -= amount
                 val newOwedMap = groupUser.owed.toMutableMap()
                 expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
-                    newOwedMap[debtorId] = if( newOwedMap[debtorId] == null) 0.0 else (newOwedMap[debtorId]!! - debtorAmount)
+                    val debt = when (expense.splitMethod) {
+                        Method.EQUALLY, Method.CUSTOM -> debtorAmount
+                        Method.PERCENTAGES -> (debtorAmount * expense.amount) / 100
+                    }
+                    newOwedMap[debtorId] =
+                        if (newOwedMap[debtorId] == null) 0.0 else (newOwedMap[debtorId]!! - debt).toBigDecimal()
+                            .setScale(2, RoundingMode.HALF_EVEN).toDouble()
                 }
-                userRef.setValue(groupUser.copy(totalOwed = groupUser.totalOwed - amount, owed = newOwedMap))
+                userRef.setValue(
+                    groupUser.copy(
+                        totalOwed = (groupUser.totalOwed - amount).toBigDecimal()
+                            .setScale(2, RoundingMode.HALF_EVEN).toDouble(),
+                        owed = newOwedMap
+                    )
+                ).await()
             }
             expense.debtors.entries.forEach { (userId, amount) ->
                 launch {
                     val userRef = groupRef.child("users").child(userId)
                     val groupUser = userRef.get().await().getValue(GroupUser::class.java)!!
-                    //groupUser.totalDebt -= amount
                     val newDebtsMap = groupUser.debts.toMutableMap()
-                    expense.paidBy.keys.forEach { payerId ->
-                        newDebtsMap[payerId] = if( newDebtsMap[payerId] == null) 0.0 else (newDebtsMap[payerId]!! - amount)
+                    val totalDebt = when (expense.splitMethod) {
+                        Method.EQUALLY, Method.CUSTOM -> amount
+                        Method.PERCENTAGES -> (amount * expense.amount) / 100
                     }
-                    userRef.setValue(groupUser.copy(totalDebt = groupUser.totalDebt - amount, debts = newDebtsMap))
+                    expense.paidBy.keys.forEach { payerId ->
+                        newDebtsMap[payerId] =
+                            if (newDebtsMap[payerId] == null) 0.0 else (newDebtsMap[payerId]!! - totalDebt).toBigDecimal()
+                                .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                    }
+                    userRef.setValue(
+                        groupUser.copy(
+                            totalDebt = (groupUser.totalDebt - totalDebt).toBigDecimal()
+                                .setScale(2, RoundingMode.HALF_EVEN).toDouble(),
+                            debts = newDebtsMap
+                        )
+                    ).await()
                 }
             }
         }

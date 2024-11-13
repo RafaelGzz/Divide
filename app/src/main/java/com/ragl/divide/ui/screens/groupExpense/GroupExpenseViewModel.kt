@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.math.RoundingMode
 import javax.inject.Inject
 
 @HiltViewModel
@@ -67,6 +68,7 @@ class GroupExpenseViewModel @Inject constructor(
     fun updateMethod(method: Method) {
         this.method = method
     }
+
     fun updateQuantities(quantities: Map<String, Double>) {
         this.quantities = quantities
     }
@@ -83,12 +85,17 @@ class GroupExpenseViewModel @Inject constructor(
         this.selectedMembers = selectedMembers
     }
 
-    fun setGroupAndExpense(group: Group, userId: String, members: List<User>, expense: GroupExpense) {
+    fun setGroupAndExpense(
+        group: Group,
+        userId: String,
+        members: List<User>,
+        expense: GroupExpense
+    ) {
         viewModelScope.launch {
-            if(expense.id.isNotEmpty()){
+            if (expense.id.isNotEmpty()) {
                 _expense.update { expense }
                 title = expense.title
-                amount = expense.amount.let { if(it == 0.0) "" else it.toString() }
+                amount = expense.amount.let { if (it == 0.0) "" else it.toString() }
                 paidBy = members.firstOrNull { it.uuid == expense.paidBy.keys.first() }!!
                 method = expense.splitMethod
 
@@ -99,15 +106,18 @@ class GroupExpenseViewModel @Inject constructor(
                         percentages = members.associate { it.uuid to 0 }
                         quantities = members.associate { it.uuid to 0.0 }
                     }
+
                     Method.PERCENTAGES -> {
                         selectedMembers = expense.debtors.keys.toList()
                         quantities = members.associate { it.uuid to 0.0 }
                         percentages = expense.debtors.mapValues { it.value.toInt() }
                     }
+
                     Method.CUSTOM -> {
                         selectedMembers = expense.debtors.keys.toList()
                         percentages = members.associate { it.uuid to 0 }
-                        quantities = expense.debtors
+                        quantities =
+                            expense.debtors + (paidBy.uuid to expense.paidBy[paidBy.uuid]!!)
                     }
                 }
             } else {
@@ -170,9 +180,13 @@ class GroupExpenseViewModel @Inject constructor(
                 val expense = _expense.value.copy(
                     title = title,
                     amount = amount.toDouble(),
-                    paidBy = if(paidBy.uuid in selectedMembers) mapOf(paidBy.uuid to amount.toDouble() - amountPerPerson) else mapOf(paidBy.uuid to amount.toDouble()),  //mapOf(paidBy.uuid to amount.toDouble() - amountPerPerson),
+                    paidBy = if (paidBy.uuid in selectedMembers) mapOf(
+                        paidBy.uuid to (amount.toDouble() - amountPerPerson).toBigDecimal()
+                            .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                    ) else mapOf(paidBy.uuid to amount.toDouble()),
                     splitMethod = method,
-                    debtors = selectedMembers.associateWith { amountPerPerson }.filter { it.key != paidBy.uuid }
+                    debtors = selectedMembers.associateWith { amountPerPerson }
+                        .filter { it.key != paidBy.uuid }
                 )
                 viewModelScope.launch {
                     val savedExpense = groupRepository.saveExpense(
@@ -197,7 +211,10 @@ class GroupExpenseViewModel @Inject constructor(
                 val expense = _expense.value.copy(
                     title = title,
                     amount = amount.toDouble(),
-                    paidBy = mapOf(paidBy.uuid to amount.toDouble()),
+                    paidBy = mapOf(
+                        paidBy.uuid to (amount.toDouble() - (percentages[paidBy.uuid]!! * amount.toDouble() / 100)).toBigDecimal()
+                            .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                    ),
                     splitMethod = method,
                     debtors = percentages.mapValues {
                         it.value.toDouble()
@@ -226,7 +243,7 @@ class GroupExpenseViewModel @Inject constructor(
                 val expense = _expense.value.copy(
                     title = title,
                     amount = amount.toDouble(),
-                    paidBy = mapOf(paidBy.uuid to amount.toDouble()),
+                    paidBy = mapOf(paidBy.uuid to quantities[paidBy.uuid]!!),
                     splitMethod = method,
                     debtors = quantities.filter { it.key != paidBy.uuid }
                 )

@@ -10,6 +10,7 @@ import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.GroupUser
+import com.ragl.divide.data.models.Method
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.FriendsRepository
@@ -187,7 +188,11 @@ class UserViewModel @Inject constructor(
             //groupUser.totalOwed += amount
             val newOwedMap = groupUser.owed.toMutableMap()
             expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
-                newOwedMap[debtorId] = (newOwedMap[debtorId] ?: 0.0) + debtorAmount
+                val debt = when (expense.splitMethod) {
+                    Method.EQUALLY, Method.CUSTOM -> debtorAmount
+                    Method.PERCENTAGES -> (debtorAmount * expense.amount) / 100
+                }
+                newOwedMap[debtorId] = (newOwedMap[debtorId] ?: 0.0) + debt
             }
             _user.update {
                 it.copy(
@@ -216,8 +221,12 @@ class UserViewModel @Inject constructor(
             val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(debtorId)!!
             //groupUser.totalDebt += amount
             val newDebtsMap = groupUser.debts.toMutableMap()
+            val totalDebt = when (expense.splitMethod) {
+                Method.EQUALLY, Method.CUSTOM -> amount
+                Method.PERCENTAGES -> (amount * expense.amount) / 100
+            }
             expense.paidBy.keys.forEach { payerId ->
-                newDebtsMap[payerId] = (newDebtsMap[payerId] ?: 0.0) + amount
+                newDebtsMap[payerId] = (newDebtsMap[payerId] ?: 0.0) + totalDebt
             }
             _user.update {
                 it.copy(
@@ -228,7 +237,7 @@ class UserViewModel @Inject constructor(
                                     if (user.key == debtorId) {
                                         user.value.copy(
                                             debts = newDebtsMap,
-                                            totalDebt = user.value.totalDebt + amount
+                                            totalDebt = user.value.totalDebt + totalDebt
                                         )
                                     } else {
                                         user.value
@@ -244,24 +253,28 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    fun removeGroupExpense(groupId: String, groupExpense: GroupExpense) {
+    fun removeGroupExpense(groupId: String, expense: GroupExpense) {
         _user.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
                     if (group.key == groupId) {
-                        group.value.copy(expenses = group.value.expenses - groupExpense.id)
+                        group.value.copy(expenses = group.value.expenses - expense.id)
                     } else {
                         group.value
                     }
                 }
             )
         }
-        groupExpense.paidBy.entries.forEach { (payerId, amount) ->
+        expense.paidBy.entries.forEach { (payerId, amount) ->
             val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(payerId)!!
             //groupUser.totalOwed += amount
             val newOwedMap = groupUser.owed.toMutableMap()
-            groupExpense.debtors.entries.forEach { (debtorId, debtorAmount) ->
-                newOwedMap[debtorId] = if( newOwedMap[debtorId] == null) 0.0 else (newOwedMap[debtorId]!! - debtorAmount)
+            expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
+                val debt = when (expense.splitMethod) {
+                    Method.EQUALLY, Method.CUSTOM -> debtorAmount
+                    Method.PERCENTAGES -> (debtorAmount * amount) / 100
+                }
+                newOwedMap[debtorId] = if( newOwedMap[debtorId] == null) 0.0 else (newOwedMap[debtorId]!! - debt)
             }
             _user.update {
                 it.copy(
@@ -286,12 +299,16 @@ class UserViewModel @Inject constructor(
                 )
             }
         }
-        groupExpense.debtors.entries.forEach { (debtorId, amount) ->
+        expense.debtors.entries.forEach { (debtorId, amount) ->
             val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(debtorId)!!
             //groupUser.totalDebt += amount
             val newDebtsMap = groupUser.debts.toMutableMap()
-            groupExpense.paidBy.keys.forEach { payerId ->
-                newDebtsMap[payerId] = if( newDebtsMap[payerId] == null) 0.0 else (newDebtsMap[payerId]!! - amount)
+            val totalDebt = when (expense.splitMethod) {
+                Method.EQUALLY, Method.CUSTOM -> amount
+                Method.PERCENTAGES -> (amount * groupUser.totalDebt) / 100
+            }
+            expense.paidBy.keys.forEach { payerId ->
+                newDebtsMap[payerId] = if( newDebtsMap[payerId] == null) 0.0 else (newDebtsMap[payerId]!! - totalDebt)
             }
             _user.update {
                 it.copy(
@@ -302,7 +319,7 @@ class UserViewModel @Inject constructor(
                                     if (user.key == debtorId) {
                                         user.value.copy(
                                             debts = newDebtsMap,
-                                            totalDebt = user.value.totalDebt - amount
+                                            totalDebt = user.value.totalDebt - totalDebt
                                         )
                                     } else {
                                         user.value
