@@ -54,11 +54,9 @@ fun AddFriendsScreen(
     onFriendAdded: (User) -> Unit,
     friends: List<User>
 ) {
-
     BackHandler {
         onBackClick()
     }
-
     LaunchedEffect(Unit) {
         vm.setCurrentFriends(friends)
     }
@@ -70,12 +68,12 @@ fun AddFriendsScreen(
                 title = {
                     Text(
                         stringResource(R.string.add_friends),
-                        style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary)
+                        style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             )
@@ -100,9 +98,9 @@ fun AddFriendsScreen(
                         Text(stringResource(R.string.cancel))
                     }
                 },
-                title = { Text(stringResource(R.string.add_friend)) },
+                title = { Text(stringResource(R.string.add_friend), style = MaterialTheme.typography.titleLarge) },
                 text = {
-                    Text(stringResource(R.string.do_you_want_to_add, vm.selectedUser!!.name))
+                    Text(stringResource(R.string.do_you_want_to_add, vm.selectedUser!!.name), style = MaterialTheme.typography.bodySmall)
                 }
             )
         }
@@ -140,7 +138,7 @@ fun AddFriendsScreen(
                 if (vm.users.isEmpty()) {
                     item {
                         Text(
-                            text = "No users found",
+                            text = stringResource(R.string.no_users_found),
                             style = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.Center),
                             modifier = Modifier.fillMaxWidth()
                         )

@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material3.AlertDialog
@@ -92,6 +95,7 @@ fun GroupScreen(
     onBackClick: () -> Unit,
     onDeleteGroup: () -> Unit,
     onSaveGroup: (Group) -> Unit,
+    user: User,
 ) {
 
     LaunchedEffect(Unit) {
@@ -159,13 +163,15 @@ fun GroupScreen(
                         title = {
                             Text(stringResource(if (!isUpdate) R.string.add_group else R.string.update_group))
                         },
-                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(titleContentColor = MaterialTheme.colorScheme.primary),
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            navigationIconContentColor = MaterialTheme.colorScheme.primary
+                        ),
                         navigationIcon = {
                             IconButton(
                                 onClick = onBackClick
                             ) {
                                 Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    Icons.Filled.Close,
                                     contentDescription = "Back"
                                 )
                             }
@@ -173,24 +179,25 @@ fun GroupScreen(
                     )
                 },
                 bottomBar = {
-                    Button(
-                        onClick = {
-                            vm.saveGroup(onSuccess = onSaveGroup, onError = {
-                                showToast(context, it)
-                            })
-                        },
-                        shape = ShapeDefaults.Medium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        Text(
-                            text = stringResource(if (!isUpdate) R.string.add else R.string.update),
-                            style = AppTypography.titleMedium,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
-                    }
+                    if (!isUpdate && selectedFriends.size > 0)
+                        Button(
+                            onClick = {
+                                vm.saveGroup(onSuccess = onSaveGroup, onError = {
+                                    showToast(context, it)
+                                })
+                            },
+                            shape = ShapeDefaults.Medium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.add),
+                                style = AppTypography.titleMedium,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
+                        }
                 }
             ) { paddingValues ->
                 if (isModalSheetVisible) {
@@ -198,15 +205,30 @@ fun GroupScreen(
                         onDismissRequest = { isModalSheetVisible = false },
                         containerColor = MaterialTheme.colorScheme.surface
                     ) {
+                        Text(
+                            stringResource(R.string.select_image_source),
+                            style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
+                        )
                         ListItem(
-                            headlineContent = { Text("Select image from gallery") },
+                            headlineContent = {
+                                Text(
+                                    stringResource(R.string.select_image_from_gallery),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            },
                             modifier = Modifier.clickable {
                                 isModalSheetVisible = false
                                 imagePickerLauncher.launch("image/*")
                             }
                         )
                         ListItem(
-                            headlineContent = { Text("Take photo") },
+                            headlineContent = {
+                                Text(
+                                    stringResource(R.string.take_photo),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            },
                             modifier = Modifier.clickable {
                                 isModalSheetVisible = false
                                 if (ContextCompat.checkSelfPermission(
@@ -225,8 +247,8 @@ fun GroupScreen(
                     if (isDeleteDialog)
                         AlertDialog(
                             onDismissRequest = { dialogEnabled = false },
-                            title = { Text(stringResource(R.string.delete_group)) },
-                            text = { Text(stringResource(R.string.delete_group_message)) },
+                            title = { Text(stringResource(R.string.delete_group), style = MaterialTheme.typography.titleLarge) },
+                            text = { Text(stringResource(R.string.delete_group_message), style = MaterialTheme.typography.bodySmall) },
                             confirmButton = {
                                 TextButton(onClick = {
                                     dialogEnabled = false
@@ -247,8 +269,8 @@ fun GroupScreen(
                     else
                         AlertDialog(
                             onDismissRequest = { dialogEnabled = false },
-                            title = { Text(stringResource(R.string.leave_group)) },
-                            text = { Text(stringResource(R.string.leave_group_message)) },
+                            title = { Text(stringResource(R.string.leave_group), style = MaterialTheme.typography.titleLarge) },
+                            text = { Text(stringResource(R.string.leave_group_message), style = MaterialTheme.typography.bodySmall) },
                             confirmButton = {
                                 TextButton(onClick = {
                                     dialogEnabled = false
@@ -274,6 +296,7 @@ fun GroupScreen(
                         .padding(paddingValues)
                         .padding(horizontal = 16.dp)
                         .verticalScroll(rememberScrollState())
+                        .imePadding()
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -315,7 +338,7 @@ fun GroupScreen(
                     }
                     Text(
                         text = stringResource(if (!isUpdate) R.string.select_group_members else R.string.group_members),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier
                             .padding(vertical = 8.dp)
                             .wrapContentHeight()
@@ -343,29 +366,47 @@ fun GroupScreen(
                     else {
                         vm.members.forEach { member ->
                             FriendItem(
-                                modifier = Modifier.padding(vertical = 4.dp),
                                 headline = member.name,
                                 supporting = member.email,
                                 photoUrl = member.photoUrl,
-                                colors = selectedColors
+                                colors = defaultColors
                             )
                         }
-                        FriendItem(
+//                        FriendItem(
+//                            modifier = Modifier
+//                                .padding(vertical = 4.dp),
+//                            headline = stringResource(R.string.add_friends_to_group),
+//                            colors = selectedColors,
+//                            icon = Icons.Filled.GroupAdd,
+//                            onClick = { showFriendSelection = true }
+//                        )
+                        Row(
                             modifier = Modifier
-                                .padding(vertical = 4.dp),
-                            headline = stringResource(R.string.add_friends_to_group),
-                            colors = defaultColors,
-                            icon = Icons.Filled.GroupAdd,
-                            onClick = { showFriendSelection = true }
-                        )
+                                .fillMaxWidth()
+                                .clickable { showFriendSelection = true }
+                                .padding(horizontal = 32.dp, vertical = 16.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Filled.GroupAdd,
+                                "Add friend",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(16.dp))
+                            Text(
+                                stringResource(R.string.add_friends_to_group),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                         Text(
                             text = stringResource(R.string.configuration),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.labelMedium,
                             modifier = Modifier
                                 .padding(top = 16.dp)
                                 .wrapContentHeight()
                         )
-                        if (groupState.users.size != 1) {
+                        if (groupState.users[user.uuid]?.totalDebt == 0.0 && groupState.users[user.uuid]?.totalOwed == 0.0 ) {
                             OutlinedButton(
                                 onClick = {
                                     isDeleteDialog = false
@@ -373,11 +414,11 @@ fun GroupScreen(
                                 },
                                 shape = ShapeDefaults.Medium,
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.primary
+                                    contentColor = MaterialTheme.colorScheme.error
                                 ),
                                 border = BorderStroke(
                                     2.dp,
-                                    MaterialTheme.colorScheme.primary
+                                    MaterialTheme.colorScheme.error
                                 ),
                                 modifier = Modifier
                                     .padding(top = 8.dp)
@@ -402,8 +443,8 @@ fun GroupScreen(
                             },
                             shape = ShapeDefaults.Medium,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.primary
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.error
                             ),
                             modifier = Modifier
                                 .padding(top = 8.dp, bottom = 16.dp)
@@ -421,7 +462,23 @@ fun GroupScreen(
                             )
                         }
                     }
-
+                    if (isUpdate)
+                        Button(
+                            onClick = {
+                                vm.saveGroup(onSuccess = onSaveGroup, onError = {
+                                    showToast(context, it)
+                                })
+                            },
+                            shape = ShapeDefaults.Medium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.update),
+                                style = AppTypography.titleMedium,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
+                        }
                 }
 
             }
@@ -482,22 +539,42 @@ fun FriendSelectionScreen(
     defaultColors: CardColors
 ) {
     var filteredFriends by remember {
-        mutableStateOf(friends)
+        mutableStateOf(friends.filterNot { it.uuid in members.map { m -> m.uuid } })
     }
+    var scrollState = rememberScrollState()
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Select Friends") },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(titleContentColor = MaterialTheme.colorScheme.primary),
+                title = { Text(stringResource(R.string.select_friends)) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(navigationIconContentColor = MaterialTheme.colorScheme.primary),
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
+        },
+        bottomBar = {
+            if (selectedFriends.isNotEmpty())
+                Button(
+                    onClick = onAddClick,
+                    shape = ShapeDefaults.Medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.add), modifier = Modifier.padding(vertical = 16.dp),
+                        style = AppTypography.titleMedium,
+                    )
+                }
         }
     ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues)) {
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .imePadding()
+        ) {
             DivideTextField(
                 input = searchText,
                 onValueChange = {
@@ -519,7 +596,7 @@ fun FriendSelectionScreen(
                 label = stringResource(R.string.search),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
             LazyColumn(
@@ -538,26 +615,15 @@ fun FriendSelectionScreen(
                     } else {
                         defaultColors
                     }
-                    FriendItem(
-                        headline = friend.name,
-                        supporting = if (isFriendInGroup) "Friend already in group" else friend.email,
-                        photoUrl = friend.photoUrl,
-                        colors = friendItemColors,
-                        onClick = { if (!isFriendInGroup) onFriendClick(friend.uuid) },
-                        enabled = !isFriendInGroup
-                    )
+                    if (!isFriendInGroup)
+                        FriendItem(
+                            headline = friend.name,
+                            supporting = friend.email,
+                            photoUrl = friend.photoUrl,
+                            colors = friendItemColors,
+                            onClick = { onFriendClick(friend.uuid) }
+                        )
                 }
-            }
-
-            // Add button
-            Button(
-                onClick = onAddClick,
-                shape = ShapeDefaults.Medium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text(stringResource(R.string.add), modifier = Modifier.padding(vertical = 16.dp))
             }
         }
     }

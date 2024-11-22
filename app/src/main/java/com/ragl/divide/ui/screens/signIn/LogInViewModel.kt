@@ -24,10 +24,14 @@ class LogInViewModel: ViewModel() {
         if(!password.contains(' ')) this.password = password
     }
     fun isFieldsValid(): Boolean {
-        return validateEmail() && validatePassword()
+        return validateEmail().and(validatePassword())
     }
     private fun validateEmail(): Boolean {
-        if (email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        if(email.isBlank()){
+            emailError = "Email is required"
+            return false
+        }
+        if (Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             emailError = ""
             return true
         } else {

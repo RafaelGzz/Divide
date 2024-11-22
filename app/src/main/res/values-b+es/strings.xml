@@ -114,4 +114,19 @@
     <string name="owes_x">debe %1$s</string>
     <string name="owed_in_general">"Te deben en general: "</string>
     <string name="owe_in_general">"Debes en general: "</string>
+    <string name="select_image_source">Selecciona origen de imagen</string>
+    <string name="select_image_from_gallery">De la galería</string>
+    <string name="take_photo">Tomar foto</string>
+    <string name="select_friends">Selecciona amigos</string>
+    <string name="no_users_found">No se encontraron usuarios</string>
+    <string name="bar_item_profile_text">Perfil</string>
+    <string name="dark_mode">Modo Oscuro</string>
+    <string name="activated">Activado</string>
+    <string name="deactivated">Desactivado</string>
+    <string name="system_default">Defecto del sistema</string>
+    <string name="allow_notifications">Permitir notificaciones</string>
+    <string name="sign_out">Cerrar Sesión</string>
+    <string name="sign_out_confirmation">¿Quieres cerrar sesión?</string>
+    <string name="update_payment">Actualizar pago</string>
+    <string name="who_will_you_pay">¿A quién vas a pagar?</string>
 </resources>

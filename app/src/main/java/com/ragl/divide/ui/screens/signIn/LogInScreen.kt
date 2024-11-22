@@ -161,7 +161,7 @@ private fun SocialMediaRow(
         Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = stringResource(R.string.connect_with_social_media),
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.titleMedium
         )
         Spacer(modifier = Modifier.height(20.dp))
         Row {
@@ -206,6 +206,7 @@ private fun Login(
             error = vm.emailError,
             imeAction = ImeAction.Next,
             onValueChange = { vm.updateEmail(it) },
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         DivideTextField(
             label = stringResource(R.string.password_text),
@@ -215,7 +216,8 @@ private fun Login(
             imeAction = ImeAction.Done,
             //isPassword = true,
             onValueChange = { vm.updatePassword(it) },
-            onAction = { if (vm.isFieldsValid()) onLoginButtonClick(vm.email, vm.password) }
+            onAction = { if (vm.isFieldsValid()) onLoginButtonClick(vm.email, vm.password) },
+                    modifier = Modifier.padding(bottom = 8.dp)
         )
         LoginButton(
             label = stringResource(R.string.log_in),
@@ -241,7 +243,8 @@ fun SignUp(
             input = vm.email,
             error = vm.emailError,
             imeAction = ImeAction.Next,
-            onValueChange = { vm.updateEmail(it) }
+            onValueChange = { vm.updateEmail(it) },
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         DivideTextField(
             label = stringResource(R.string.username),
@@ -249,6 +252,7 @@ fun SignUp(
             error = vm.usernameError,
             imeAction = ImeAction.Next,
             onValueChange = { vm.updateUsername(it) },
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         DivideTextField(
             label = stringResource(R.string.password_text),
@@ -258,6 +262,7 @@ fun SignUp(
             imeAction = ImeAction.Next,
             //isPassword = true,
             onValueChange = { vm.updatePassword(it) },
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         DivideTextField(
             label = stringResource(R.string.confirm_password_text),
@@ -267,6 +272,7 @@ fun SignUp(
             imeAction = ImeAction.Done,
             //isPassword = true,
             onValueChange = { vm.updatePasswordConfirm(it) },
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         LoginButton(
             label = stringResource(R.string.sign_up),

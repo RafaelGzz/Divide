@@ -28,7 +28,7 @@ class ExpenseViewModel @Inject constructor(
         private set
     var title by mutableStateOf("")
         private set
-    var titleError by mutableStateOf("")
+    var titleError: String? by mutableStateOf("")
         private set
     var amount by mutableStateOf("")
         private set
@@ -59,9 +59,8 @@ class ExpenseViewModel @Inject constructor(
                 this.titleError = "Title is required"
                 false
             }
-
             else -> {
-                this.titleError = ""
+                this.titleError = null
                 true
             }
         }
@@ -136,7 +135,8 @@ class ExpenseViewModel @Inject constructor(
         onError: (String) -> Unit,
         scheduleNotificationService: ScheduleNotificationService
     ) {
-        if (validateTitle() && validateAmount() && validatePayments()) {
+        val valid = validateTitle().and(validateAmount()).and(validatePayments())
+        if (valid) {
             viewModelScope.launch {
                 try {
                     val savedExpense = userRepository.saveExpense(

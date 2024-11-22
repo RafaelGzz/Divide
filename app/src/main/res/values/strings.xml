@@ -114,4 +114,19 @@
     <string name="owed_in_general">"You're owed in general: "</string>
     <string name="owe_in_general">"You owe in general: "</string>
     <string name="two_people_must_pay">At least two people must pay</string>
+    <string name="select_image_source">Select image source</string>
+    <string name="select_image_from_gallery">From gallery</string>
+    <string name="take_photo">Take photo</string>
+    <string name="select_friends">Select Friends</string>
+    <string name="no_users_found">No users found</string>
+    <string name="bar_item_profile_text">Profile</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="activated">Activated</string>
+    <string name="deactivated">Deactivated</string>
+    <string name="system_default">System Default</string>
+    <string name="allow_notifications">Allow notifications</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="sign_out_confirmation">Do you want to sign out?</string>
+    <string name="update_payment">Update payment</string>
+    <string name="who_will_you_pay">Who will you pay?</string>
 </resources>

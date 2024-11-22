@@ -12,4 +12,5 @@ data class GroupExpense(
     val splitMethod: Method = Method.EQUALLY,
     val paidBy: Map<String, Double> = emptyMap(),
     val debtors: Map<String, Double> = emptyMap(),
+    val amountPaid: Map<String, Double> = emptyMap(),
 ): IExpense

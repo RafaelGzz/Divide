@@ -10,7 +10,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,7 +22,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -33,23 +31,38 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -69,7 +82,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ragl.divide.R
@@ -93,11 +105,14 @@ fun HomeScreen(
     onSignOut: () -> Unit,
     onExpenseClick: (String) -> Unit,
     onGroupClick: (String) -> Unit,
-    onAddFriendsClick: () -> Unit
+    onAddFriendsClick: () -> Unit,
+    onChangeDarkMode: (String?) -> Unit,
+    isDarkMode: String?
 ) {
     val tabs: List<Pair<Int, ImageVector>> = listOf(
         Pair(R.string.bar_item_home_text, Icons.Filled.AttachMoney),
-        Pair(R.string.bar_item_friends_text, Icons.Filled.People)
+        Pair(R.string.bar_item_friends_text, Icons.Filled.People),
+        Pair(R.string.bar_item_profile_text, Icons.Filled.Person)
     )
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -146,20 +161,6 @@ fun HomeScreen(
             exit = ExitTransition.None
         ) {
             Scaffold(
-                topBar = {
-                    TopBar(
-                        user = user.user,
-                        onTapUserImage = { vm.signOut { onSignOut() } },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            //.padding(horizontal = 16.dp)
-                            //.clip(ShapeDefaults.Medium)
-                            //.background(MaterialTheme.colorScheme.primaryContainer)
-                            .padding(horizontal = 16.dp, vertical = 20.dp)
-                            .statusBarsPadding()
-                    )
-
-                },
                 bottomBar = {
                     BottomBar(
                         tabs = tabs,
@@ -177,7 +178,7 @@ fun HomeScreen(
                     ) {
                         ExtendedFloatingActionButton(
                             text = { Text(stringResource(R.string.add_friends)) },
-                            icon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                            icon = { Icon(Icons.Filled.GroupAdd, contentDescription = null) },
                             onClick = onAddFriendsClick,
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -192,7 +193,6 @@ fun HomeScreen(
                     modifier = modifier
                         .padding(paddingValues)
                 ) {
-
                     PullToRefreshBox(
                         isRefreshing = pullLoading,
                         state = pullToRefreshState,
@@ -227,12 +227,229 @@ fun HomeScreen(
                                 enter = fadeIn(animationSpec = tween(500)),
                                 exit = ExitTransition.None
                             ) {
-                                FriendsBody(
-                                    friends = friends
+                                FriendsBody(friends = friends)
+                            }
+                            AnimatedVisibility(
+                                visible = selectedTabIndex == 2,
+                                enter = fadeIn(animationSpec = tween(500)),
+                                exit = ExitTransition.None
+                            ) {
+                                ProfileBody(
+                                    user = user.user,
+                                    onSignOut = { vm.signOut { onSignOut() } },
+                                    isDarkMode = isDarkMode,
+                                    onChangeDarkMode = onChangeDarkMode
                                 )
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileBody(
+    modifier: Modifier = Modifier,
+    user: User,
+    onSignOut: () -> Unit,
+    isDarkMode: String?,
+    onChangeDarkMode: (String?) -> Unit
+) {
+    val allowNotifications = remember { mutableStateOf(true) }
+    var isSignOutDialogVisible by remember { mutableStateOf(false) }
+    Column {
+        if (isSignOutDialogVisible) {
+            AlertDialog(
+                onDismissRequest = { isSignOutDialogVisible = false },
+                confirmButton = {
+                    TextButton(onClick = onSignOut) {
+                        Text(stringResource(R.string.yes))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { isSignOutDialogVisible = false }) {
+                        Text(stringResource(R.string.no))
+                    }
+                },
+                title = {
+                    Text(stringResource(R.string.sign_out), style = MaterialTheme.typography.titleLarge)
+                },
+                text = {
+                    Text(stringResource(R.string.sign_out_confirmation), style = MaterialTheme.typography.bodySmall)
+                },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                titleContentColor = MaterialTheme.colorScheme.primary,
+                textContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+        TopBar(
+            title = stringResource(R.string.bar_item_profile_text)
+        )
+        Box(modifier = modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (user.photoUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(user.photoUrl).crossfade(true).build(),
+                        contentScale = ContentScale.Crop,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .size(52.dp)
+                    )
+                } else {
+                    Icon(
+                        Icons.Filled.Person,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(52.dp)
+                            .padding(12.dp)
+                            .clip(CircleShape)
+                    )
+                }
+                Column {
+                    Text(
+                        user.name,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        user.email,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        ),
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                IconButton(onClick = { isSignOutDialogVisible = true }) {
+                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        NotificationSetting(allowNotifications)
+        Spacer(modifier = Modifier.height(16.dp))
+        DarkModeSetting(isDarkMode, onChangeDarkMode)
+        Spacer(modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun NotificationSetting(allowNotifications: MutableState<Boolean>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ),
+        shape = RoundedCornerShape(8.dp),
+        onClick = { allowNotifications.value = !allowNotifications.value }
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Filled.Notifications,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.allow_notifications),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal)
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Switch(checked = allowNotifications.value, onCheckedChange = { allowNotifications.value = it })
+        }
+    }
+}
+
+@Composable
+private fun DarkModeSetting(
+    isDarkMode: String?,
+    onChangeDarkMode: (String?) -> Unit
+) {
+    val isExpanded = remember { mutableStateOf(false) }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ),
+        shape = RoundedCornerShape(8.dp),
+        onClick = { isExpanded.value = !isExpanded.value },
+    ) {
+        Row(
+            Modifier
+                .padding(horizontal = 12.dp)
+                .padding(top = 12.dp, bottom = if (isExpanded.value) 0.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Filled.DarkMode,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.dark_mode),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal)
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            IconButton(onClick = { isExpanded.value = !isExpanded.value }) {
+                Icon(
+                    if (isExpanded.value) Icons.Filled.KeyboardArrowUp
+                    else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
+        }
+        AnimatedVisibility(visible = isExpanded.value) {
+            Column {
+                Row(
+                    Modifier.padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Spacer(modifier = Modifier.width(36.dp))
+                    Text(
+                        stringResource(R.string.activated),
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Normal)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    RadioButton(
+                        selected = isDarkMode == "true",
+                        onClick = { onChangeDarkMode("true") })
+                }
+                Row(
+                    Modifier.padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Spacer(modifier = Modifier.width(36.dp))
+                    Text(
+                        stringResource(R.string.deactivated),
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Normal)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    RadioButton(
+                        selected = isDarkMode == "false",
+                        onClick = { onChangeDarkMode("false") })
+                }
+                Row(
+                    Modifier.padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Spacer(modifier = Modifier.width(36.dp))
+                    Text(
+                        stringResource(R.string.system_default),
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Normal)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    RadioButton(selected = isDarkMode == null, onClick = { onChangeDarkMode(null) })
                 }
             }
         }
@@ -246,15 +463,11 @@ fun FriendsBody(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
     ) {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
-                Text(
-                    text = stringResource(R.string.your_friends),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .padding(bottom = 20.dp, top = 6.dp)
+                TopBar(
+                    title = stringResource(R.string.bar_item_friends_text)
                 )
             }
             if (friends.isEmpty()) {
@@ -266,13 +479,15 @@ fun FriendsBody(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-            }
-            items(friends, key = { it.uuid }) { friend ->
+            } else items(friends, key = { it.uuid }) { friend ->
                 FriendItem(
                     headline = friend.name,
                     supporting = friend.email,
                     photoUrl = friend.photoUrl,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
             }
 
@@ -290,6 +505,11 @@ private fun HomeBody(
     onGroupClick: (String) -> Unit
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            TopBar(
+                title = stringResource(R.string.app_name)
+            )
+        }
         item {
             TitleRow(
                 labelStringResource = R.string.your_expenses,
@@ -397,7 +617,7 @@ fun TitleRow(
                 text = stringResource(buttonStringResource),
                 style = MaterialTheme.typography.titleSmall.copy(color = MaterialTheme.colorScheme.onPrimary),
                 modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .padding(horizontal = 28.dp, vertical = 8.dp)
             )
         }
     }
@@ -435,6 +655,7 @@ private fun ExpensesRow(
                 ) {
                     Icon(
                         getCategoryIcon(it.category),
+                        tint = MaterialTheme.colorScheme.primary,
                         contentDescription = null,
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
@@ -457,7 +678,7 @@ private fun ExpensesRow(
                         Text(
                             text = NumberFormat.getCurrencyInstance().format(it.amount),
                             style = MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Normal
                             ),
                             softWrap = true,
@@ -467,32 +688,6 @@ private fun ExpensesRow(
                     }
                 }
             }
-//            if (expenses.size > 2) {
-//                item {
-//                    Row(
-//                        modifier = Modifier
-//                            .height(80.dp)
-//                            .padding(end = 10.dp)
-//                            .clip(ShapeDefaults.Medium)
-//                            .clickable { },
-//                        verticalAlignment = Alignment.CenterVertically,
-//                        horizontalArrangement = Arrangement.Center
-//                    ) {
-//                        Text(
-//                            text = stringResource(R.string.see_all),
-//                            style = AppTypography.titleMedium.copy(
-//                                color = MaterialTheme.colorScheme.primary,
-//                                textAlign = TextAlign.Center,
-//                                fontSize = 12.sp,
-//                                lineHeight = 20.sp
-//                            ),
-//                            softWrap = true,
-//                            overflow = TextOverflow.Ellipsis,
-//                            modifier = Modifier.padding(10.dp)
-//                        )
-//                    }
-//                }
-//            }
             item {
                 Spacer(Modifier.width(8.dp))
             }
@@ -502,61 +697,23 @@ private fun ExpensesRow(
 
 @Composable
 private fun TopBar(
-    modifier: Modifier = Modifier,
-    user: User,
-    onTapUserImage: () -> Unit
+    title: String
 ) {
-    val owed = 2334.00
-    val owe = 122.32
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start,
-        modifier = modifier
+    Box(
+        modifier = Modifier
     ) {
-        Box {
-            if (user.photoUrl.isNotBlank()) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(user.photoUrl).crossfade(true).build(),
-                    contentScale = ContentScale.Crop,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                        .size(70.dp)
-                        .clickable { onTapUserImage() }
-                )
-            } else {
-                Icon(
-                    Icons.Filled.Person,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                        .size(70.dp)
-                        .padding(12.dp)
-                        .clip(CircleShape)
-                        .clickable { onTapUserImage() }
-                )
-            }
-        }
-        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .align(Alignment.Center)
+        ) {
             Text(
-                text = user.name,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold
-                )
-            )
-            Text(
-                text = stringResource(R.string.owed, owed),
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal)
-            )
-            Text(
-                text = stringResource(R.string.you_owe, owe),
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal)
+                text = title,
+                style = MaterialTheme.typography.headlineMedium
             )
         }
     }
+
 }
 
 @Composable
@@ -565,21 +722,24 @@ private fun BottomBar(
     selectedTabIndex: Int,
     onItemClick: (Int) -> Unit
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .height(80.dp)
-    ) {
-        tabs.forEachIndexed { index, pair ->
-            BottomBarItem(
-                labelStringResource = pair.first,
-                icon = pair.second,
-                selected = selectedTabIndex == index,
-                onItemClick = { onItemClick(index) },
-                modifier = Modifier.weight(1f)
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .height(80.dp)
+        ) {
+            tabs.forEachIndexed { index, pair ->
+                BottomBarItem(
+                    labelStringResource = pair.first,
+                    icon = pair.second,
+                    selected = selectedTabIndex == index,
+                    onItemClick = { onItemClick(index) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
@@ -601,13 +761,22 @@ private fun BottomBarItem(
             Icon(
                 icon,
                 contentDescription = null,
-                tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                tint = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = 0.6f
+                ),
                 modifier = Modifier
                     .clip(ShapeDefaults.Medium)
-                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 16.dp, vertical = 4.dp)
             )
-            Text(text = stringResource(labelStringResource), fontSize = 14.sp)
+            Text(
+                text = stringResource(labelStringResource),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
+                        alpha = 0.6f
+                    )
+                ),
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }

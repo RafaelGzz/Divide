@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,7 +45,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -54,10 +54,12 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import java.io.File
+import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+fun Double.toTwoDecimals() = toBigDecimal().setScale(2, RoundingMode.HALF_EVEN).toDouble()
 
 @Composable
 fun DivideTextField(
@@ -70,8 +72,8 @@ fun DivideTextField(
     placeholder: @Composable (() -> Unit)? = null,
     keyboardActions: KeyboardActions = KeyboardActions(),
     singleLine: Boolean = true,
-    errorText: Boolean = true,
-    error: String = "",
+//    errorText: Boolean = true,
+    error: String? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
     autoCorrect: Boolean = true,
@@ -120,7 +122,7 @@ fun DivideTextField(
     Column(modifier = modifier) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal),
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -154,17 +156,20 @@ fun DivideTextField(
                 onDone = { onAction() }
             ),
             onValueChange = { onValueChange(it) },
+            textStyle = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(ShapeDefaults.Medium)
         )
-        if (errorText)
+        if (!error.isNullOrEmpty())
             Text(
                 text = error,
                 color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal),
+                style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(vertical = 4.dp)
             )
+        else
+            Spacer(modifier = Modifier.padding(top = 4.dp))
     }
 }
 

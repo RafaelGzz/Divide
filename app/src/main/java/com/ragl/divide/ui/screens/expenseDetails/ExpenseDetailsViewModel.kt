@@ -43,7 +43,7 @@ class ExpenseDetailsViewModel @Inject constructor(
         }
     }
 
-    fun deletePayment(paymentId: String, amount: Double, onFailure: (String) -> Unit) {
+    fun deletePayment(paymentId: String, amount: Double, onFailure: (String) -> Unit, onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
                 userRepository.deleteExpensePayment(paymentId, amount, _expense.value.id)
@@ -53,6 +53,7 @@ class ExpenseDetailsViewModel @Inject constructor(
                         amountPaid = it.amountPaid - amount
                     )
                 }
+                onSuccess()
             } catch (e: Exception) {
                 Log.e("ExpenseDetailsViewModel", e.message, e)
                 onFailure(e.message ?: "Something went wrong")

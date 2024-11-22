@@ -16,15 +16,10 @@ import javax.inject.Singleton
 interface UserRepository {
 
     fun isUserSignedIn(): Boolean
-
     suspend fun createUserInDatabase(): User
-
     suspend fun getUser(id: String): User
-
     fun getFirebaseUser(): FirebaseUser?
-
     suspend fun signInWithCredential(credential: AuthCredential): User?
-
     suspend fun signInWithEmailAndPassword(email: String, password: String): User?
     suspend fun signUpWithEmailAndPassword(email: String, password: String, name: String): User?
     fun signOut()

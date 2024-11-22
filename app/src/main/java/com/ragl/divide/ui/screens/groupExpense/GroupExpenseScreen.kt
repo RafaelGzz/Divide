@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -51,7 +52,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -65,8 +65,8 @@ import com.ragl.divide.ui.showToast
 import com.ragl.divide.ui.theme.AppTypography
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.FriendItem
+import com.ragl.divide.ui.utils.toTwoDecimals
 import com.ragl.divide.ui.utils.validateQuantity
-import java.math.RoundingMode
 import java.text.NumberFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,9 +77,8 @@ fun GroupExpenseScreen(
     expense: GroupExpense,
     userId: String,
     members: List<User>,
-    isUpdate: Boolean,
     onBackClick: () -> Unit,
-    onSaveExpense: (GroupExpense) -> Unit
+    onSaveExpense: (GroupExpense, GroupExpense) -> Unit
 ) {
     LaunchedEffect(Unit) {
         vm.setGroupAndExpense(group, userId, members, expense)
@@ -90,9 +89,8 @@ fun GroupExpenseScreen(
     var methodMenuExpanded by remember { mutableStateOf(false) }
 
     val sortedMembers = remember {
-        members.sortedBy { it.name.lowercase() }
+        members.sortedWith(compareBy({ it.uuid != userId }, { it.name.lowercase() }))
     }
-
     BackHandler {
         if (methodMenuExpanded) methodMenuExpanded = false
         else onBackClick()
@@ -106,99 +104,28 @@ fun GroupExpenseScreen(
                 CenterAlignedTopAppBar(
                     title = {
                         Text(
-                            stringResource(if (!isUpdate) R.string.add_expense else R.string.update_expense),
-                            style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary)
+                            stringResource(if (!vm.isUpdate.value) R.string.add_expense else R.string.update_expense),
+                            style = MaterialTheme.typography.titleLarge
                         )
                     },
                     navigationIcon = {
                         IconButton(
                             onClick = onBackClick
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 )
             },
             bottomBar = {
-                Button(
-                    onClick = {
-                        if (vm.validateTitle() && vm.validateAmount()) {
-                            when (vm.method) {
-                                Method.EQUALLY -> {
-                                    if (vm.selectedMembers.size < 2) {
-                                        showToast(
-                                            context,
-                                            context.getString(R.string.two_people_must_be_selected)
-                                        )
-                                    } else {
-                                        vm.saveEquallyExpense(
-                                            onSuccess = onSaveExpense,
-                                            onError = { showToast(context, it) }
-                                        )
-                                    }
-                                }
 
-                                Method.PERCENTAGES -> {
-                                    if (vm.percentages.values.sum() != 100) {
-                                        showToast(
-                                            context,
-                                            context.getString(R.string.percentages_sum_must_be_100)
-                                        )
-                                    } else if (vm.percentages.values.any { it == 100 }) {
-                                        showToast(
-                                            context,
-                                            context.getString(R.string.two_people_must_pay)
-                                        )
-                                    } else {
-                                        vm.savePercentageExpense(
-                                            onSuccess = onSaveExpense,
-                                            onError = { showToast(context, it) }
-                                        )
-                                    }
-                                }
-
-                                Method.CUSTOM -> {
-                                    if (vm.quantities.values.any { it == vm.amount.toDouble() }) {
-                                        showToast(
-                                            context,
-                                            context.getString(R.string.two_people_must_pay)
-                                        )
-                                    } else if (vm.quantities.values.sum() != (vm.amount.toDouble())) {
-                                        showToast(
-                                            context,
-                                            context.getString(
-                                                R.string.quantities_sum_must_be_amount,
-                                                vm.amount
-                                            )
-                                        )
-                                    } else {
-                                        vm.saveCustomExpense(
-                                            onSuccess = onSaveExpense,
-                                            onError = { showToast(context, it) }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                    },
-                    shape = ShapeDefaults.Medium,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = stringResource(if (!isUpdate) R.string.add else R.string.update),
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(vertical = 12.dp)
-                    )
-                }
             }
         ) { paddingValues ->
             Column(
                 Modifier
                     .padding(paddingValues)
+                    .imePadding()
+                    .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
 
@@ -207,12 +134,14 @@ fun GroupExpenseScreen(
                     input = vm.title,
                     error = vm.titleError,
                     onValueChange = vm::updateTitle,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 12.dp)
                 )
                 DivideTextField(
                     label = stringResource(R.string.amount),
                     keyboardType = KeyboardType.Number,
-                    prefix = { Text(text = "$", style = AppTypography.bodyLarge) },
+                    prefix = { Text(text = "$", style = AppTypography.bodyMedium) },
                     input = vm.amount,
                     error = vm.amountError,
                     onValueChange = { input ->
@@ -220,24 +149,24 @@ fun GroupExpenseScreen(
                         vm.updateAmountPerPerson(
                             if (vm.selectedMembers.isEmpty()) 0.0 else {
                                 ((vm.amount.toDoubleOrNull()
-                                    ?: 0.0) / vm.selectedMembers.size).toBigDecimal()
-                                    .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                                    ?: 0.0) / vm.selectedMembers.size).toTwoDecimals()
                             }
                         )
                     },
                     modifier = Modifier.padding(horizontal = 16.dp)
+                        .padding(bottom = 12.dp)
                 )
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text(
                         text = stringResource(R.string.paid_by),
-                        style = AppTypography.labelSmall.copy(fontWeight = FontWeight.Normal),
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     ExposedDropdownMenuBox(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 24.dp),
+                            .padding(bottom = 20.dp),
                         expanded = paidByMenuExpanded,
                         onExpandedChange = { paidByMenuExpanded = !paidByMenuExpanded }) {
                         TextField(
@@ -248,6 +177,7 @@ fun GroupExpenseScreen(
                                 unfocusedIndicatorColor = Color.Transparent,
                             ),
                             value = vm.paidBy.name,
+                            textStyle = MaterialTheme.typography.bodyMedium,
                             onValueChange = {},
                             singleLine = true,
                             readOnly = true,
@@ -288,14 +218,14 @@ fun GroupExpenseScreen(
                         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                             Text(
                                 text = stringResource(R.string.split_method),
-                                style = AppTypography.labelSmall.copy(fontWeight = FontWeight.Normal),
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                             ExposedDropdownMenuBox(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 24.dp),
+                                    .padding(bottom = 20.dp),
                                 expanded = methodMenuExpanded,
                                 onExpandedChange = { methodMenuExpanded = !methodMenuExpanded }) {
                                 TextField(
@@ -306,6 +236,7 @@ fun GroupExpenseScreen(
                                         unfocusedIndicatorColor = Color.Transparent,
                                     ),
                                     value = stringResource(vm.method.resId),
+                                    textStyle = MaterialTheme.typography.bodyMedium,
                                     onValueChange = {},
                                     singleLine = true,
                                     readOnly = true,
@@ -337,9 +268,7 @@ fun GroupExpenseScreen(
                                                 vm.updateAmountPerPerson(
                                                     if (vm.selectedMembers.isEmpty()) 0.0 else {
                                                         ((vm.amount.toDoubleOrNull()
-                                                            ?: 0.0) / vm.selectedMembers.size).toBigDecimal()
-                                                            .setScale(2, RoundingMode.HALF_EVEN)
-                                                            .toDouble()
+                                                            ?: 0.0) / vm.selectedMembers.size).toTwoDecimals()
                                                     }
                                                 )
                                             }
@@ -358,7 +287,7 @@ fun GroupExpenseScreen(
                                 Method.PERCENTAGES -> stringResource(R.string.indicate_percentages)
                                 Method.CUSTOM -> stringResource(R.string.indicate_quantities)
                             },
-                            style = AppTypography.bodyMedium,
+                            style = AppTypography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier
                                 .padding(bottom = 8.dp)
@@ -423,10 +352,8 @@ fun GroupExpenseScreen(
                                 Method.CUSTOM -> {
                                     val amount = vm.amount.toDoubleOrNull() ?: 0.0
                                     val quantitiesSum = vm.quantities.values.sum()
-                                    val remainingQuantity = (amount - quantitiesSum).toBigDecimal()
-                                        .setScale(2, RoundingMode.HALF_EVEN).toDouble()
-                                    val exceeded = (quantitiesSum - amount).toBigDecimal()
-                                        .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                                    val remainingQuantity = (amount - quantitiesSum).toTwoDecimals()
+                                    val exceeded = (quantitiesSum - amount).toTwoDecimals()
                                     Text(
                                         stringResource(
                                             R.string.x_of_y,
@@ -461,8 +388,7 @@ fun GroupExpenseScreen(
                             FriendItem(
                                 headline = friend.name,
                                 supporting = when (vm.method) {
-                                    Method.PERCENTAGES -> "$" + (amount * friendQuantity / 100).toBigDecimal()
-                                        .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+                                    Method.PERCENTAGES -> "$" + (amount * friendQuantity / 100).toTwoDecimals()
 
                                     else -> ""
                                 },
@@ -483,9 +409,7 @@ fun GroupExpenseScreen(
                                                 vm.updateAmountPerPerson(
                                                     if (vm.selectedMembers.isEmpty()) 0.0 else {
                                                         ((vm.amount.toDoubleOrNull()
-                                                            ?: 0.0) / vm.selectedMembers.size).toBigDecimal()
-                                                            .setScale(2, RoundingMode.HALF_EVEN)
-                                                            .toDouble()
+                                                            ?: 0.0) / vm.selectedMembers.size).toTwoDecimals()
                                                     }
                                                 )
                                             })
@@ -572,6 +496,73 @@ fun GroupExpenseScreen(
                                         }
                                     }
                                 }
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                if (vm.validateTitle().and(vm.validateAmount())) {
+                                    when (vm.method) {
+                                        Method.EQUALLY -> {
+                                            if (vm.selectedMembers.size < 2) {
+                                                showToast(
+                                                    context,
+                                                    context.getString(R.string.two_people_must_be_selected)
+                                                )
+                                                return@Button
+                                            }
+                                        }
+
+                                        Method.PERCENTAGES -> {
+                                            if (vm.percentages.values.sum() != 100) {
+                                                showToast(
+                                                    context,
+                                                    context.getString(R.string.percentages_sum_must_be_100)
+                                                )
+                                                return@Button
+                                            } else if (vm.percentages.values.any { it == 100 }) {
+                                                showToast(
+                                                    context,
+                                                    context.getString(R.string.two_people_must_pay)
+                                                )
+                                                return@Button
+                                            }
+                                        }
+
+                                        Method.CUSTOM -> {
+                                            if (vm.quantities.values.any { it == vm.amount.toDouble() }) {
+                                                showToast(
+                                                    context,
+                                                    context.getString(R.string.two_people_must_pay)
+                                                )
+                                                return@Button
+                                            } else if (vm.quantities.values.sum() != (vm.amount.toDouble())) {
+                                                showToast(
+                                                    context,
+                                                    context.getString(
+                                                        R.string.quantities_sum_must_be_amount,
+                                                        vm.amount
+                                                    )
+                                                )
+                                                return@Button
+                                            }
+                                        }
+                                    }
+                                    vm.saveExpense(
+                                        onSuccess = onSaveExpense,
+                                        onError = { showToast(context, it) }
+                                    )
+                                }
+                            },
+                            shape = ShapeDefaults.Medium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = stringResource(if (!vm.isUpdate.value) R.string.add else R.string.update),
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(vertical = 12.dp)
                             )
                         }
                     }

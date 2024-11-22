@@ -17,6 +17,7 @@ class PreferencesRepository(
 ) {
     private companion object {
         val KEY_START_DESTINATION = stringPreferencesKey("start_destination")
+        val KEY_DARK_MODE = stringPreferencesKey("dark_mode")
         const val TAG = "PreferencesRepositoryImpl"
     }
 
@@ -33,9 +34,28 @@ class PreferencesRepository(
             it[KEY_START_DESTINATION] ?: Screen.Login.route
         }
 
+    val darkModeFlow: Flow<String?> = dataStore.data
+        .catch {
+            if (it is IOException) {
+                Log.e(TAG, "Error reading preferences", it)
+                emit(emptyPreferences())
+            } else {
+                throw it
+            }
+        }
+        .map {
+            it[KEY_DARK_MODE]
+        }
+
     suspend fun saveStartDestination(startDestination: String) {
         dataStore.edit {
             it[KEY_START_DESTINATION] = startDestination
+        }
+    }
+
+    suspend fun saveDarkMode(darkMode: Boolean) {
+        dataStore.edit {
+            it[KEY_DARK_MODE] = darkMode.toString()
         }
     }
 }

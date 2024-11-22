@@ -41,7 +41,7 @@ class SignUpViewModel: ViewModel() {
     }
 
     fun isFieldsValid(): Boolean {
-        return validateEmail() && validateUsername() && validatePassword() && validatePasswordConfirm()
+        return validateEmail().and(validateUsername().and(validatePassword().and(validatePasswordConfirm())))
     }
 
     private fun validateEmail(): Boolean {

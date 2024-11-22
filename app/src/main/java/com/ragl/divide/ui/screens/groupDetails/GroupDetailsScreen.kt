@@ -1,13 +1,9 @@
 package com.ragl.divide.ui.screens.groupDetails
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -82,7 +78,6 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupDetailsScreen(
     groupDetailsViewModel: GroupDetailsViewModel = hiltViewModel(),
@@ -102,12 +97,12 @@ fun GroupDetailsScreen(
         groupDetailsViewModel.setGroup(group, userId, members)
     }
     val groupState by groupDetailsViewModel.group.collectAsState()
-
     val groupUser = groupDetailsViewModel.groupUser
 
     Scaffold(
         topBar = {
             GroupDetailsAppBar(
+                group = group,
                 onBackClick = onBackClick,
                 onEditClick = {
                     editGroup(groupState.id)
@@ -119,60 +114,52 @@ fun GroupDetailsScreen(
                 {},
                 Icons.Filled.Add,
                 onAddExpenseClick,
-                onAddPaymentClick
+                onAddPaymentClick,
+                groupUser.debts.isNotEmpty()
             )
         }
     ) { paddingValues ->
-        AnimatedVisibility(
-            true,
-            enter = fadeIn(animationSpec = tween(500)),
-            exit = fadeOut(animationSpec = tween(500))
+
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-            ) {
 
-                GroupImageAndTitleRow(group)
-
-                if (groupUser.totalOwed != 0.0) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        buildAnnotatedString {
-                            append(stringResource(R.string.owed_in_general))
-                            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                append(NumberFormat.getCurrencyInstance().format(groupUser.totalOwed))
-                            }
-                        },
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-                if (groupUser.totalDebt != 0.0) {
-                    Text(
-                        buildAnnotatedString {
-                            append(stringResource(R.string.owe_in_general))
-                            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                append(NumberFormat.getCurrencyInstance().format(groupUser.totalDebt))
-                            }
-                        },
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-
+            if (groupUser.totalOwed != 0.0) {
                 Spacer(modifier = Modifier.height(16.dp))
-
-                if (groupState.expenses.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.group_no_expenses),
-                        style = AppTypography.labelSmall,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
+                Text(
+                    buildAnnotatedString {
+                        append(stringResource(R.string.owed_in_general))
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                            append(NumberFormat.getCurrencyInstance().format(groupUser.totalOwed))
+                        }
+                    },
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            if (groupUser.totalDebt != 0.0) {
+                Text(
+                    buildAnnotatedString {
+                        append(stringResource(R.string.owe_in_general))
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                            append(NumberFormat.getCurrencyInstance().format(groupUser.totalDebt))
+                        }
+                    },
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            if (groupState.expenses.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.group_no_expenses),
+                    style = AppTypography.labelSmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else
                 ExpenseListView(
                     expensesAndPayments = groupDetailsViewModel.expensesAndPayments,
                     modifier = Modifier.weight(1f),
@@ -180,16 +167,16 @@ fun GroupDetailsScreen(
                     onExpenseClick = onExpenseClick,
                     members = members
                 )
-            }
         }
     }
 }
 
 @Composable
-private fun GroupImageAndTitleRow(group: Group) {
+private fun GroupImageAndTitleRow(group: Group, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier
     ) {
         if (group.image.isNotEmpty()) {
             AsyncImage(
@@ -200,7 +187,7 @@ private fun GroupImageAndTitleRow(group: Group) {
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(60.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
             )
         } else {
@@ -210,13 +197,13 @@ private fun GroupImageAndTitleRow(group: Group) {
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .clip(CircleShape)
-                    .size(60.dp)
+                    .size(40.dp)
                     .background(MaterialTheme.colorScheme.primary)
             )
         }
         Text(
             group.name,
-            style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary),
+            style = MaterialTheme.typography.titleLarge,
             softWrap = true,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -253,7 +240,6 @@ private fun ExpenseListView(
             else -> ""
         }
     }
-
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = modifier
@@ -266,6 +252,9 @@ private fun ExpenseListView(
                 members = members,
                 onExpenseClick = onExpenseClick
             )
+        }
+        item {
+            Spacer(Modifier.height(70.dp))
         }
     }
 }
@@ -341,7 +330,7 @@ private fun GroupExpenseItem(
         )
         Icon(
             if (expenseOrPayment is GroupExpense) getCategoryIcon(expenseOrPayment.category) else Icons.Filled.AttachMoney,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            tint = MaterialTheme.colorScheme.primary,
             contentDescription = null,
             modifier = Modifier.padding(start = 12.dp)
         )
@@ -379,7 +368,7 @@ private fun GroupExpenseItem(
 
                 is Payment -> {
                     Text(
-                        "${members.find { it.uuid == expenseOrPayment.paidBy }?.name} paid ${members.find { it.uuid == expenseOrPayment.paidTo }?.name}",
+                        "${members.find { it.uuid == expenseOrPayment.issuer }?.name} paid ${members.find { it.uuid == expenseOrPayment.receiver }?.name}",
                         softWrap = true,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelMedium.copy(
@@ -414,15 +403,16 @@ private fun GroupExpenseItem(
 @Composable
 private fun GroupDetailsAppBar(
     onBackClick: () -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    group: Group
 ) {
     TopAppBar(
         colors = TopAppBarDefaults.largeTopAppBarColors(
             scrolledContainerColor = Color.Transparent,
             containerColor = Color.Transparent,
-            titleContentColor = MaterialTheme.colorScheme.primary
+            navigationIconContentColor = MaterialTheme.colorScheme.primary
         ),
-        title = {},
+        title = { GroupImageAndTitleRow(group) },
         navigationIcon = {
             IconButton(
                 onClick = onBackClick
@@ -444,7 +434,8 @@ fun CustomFloatingActionButton(
     onFabClick: () -> Unit,
     fabIcon: ImageVector,
     onAddExpenseClick: () -> Unit,
-    onAddPaymentClick: () -> Unit
+    onAddPaymentClick: () -> Unit,
+    hasDebts: Boolean = false
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -457,7 +448,6 @@ fun CustomFloatingActionButton(
     )
 
     Column {
-
         // ExpandedBox over the FAB
         Column(
             modifier = Modifier
@@ -477,39 +467,42 @@ fun CustomFloatingActionButton(
             Button(
                 onClick = { onAddExpenseClick() },
                 shape = ShapeDefaults.Medium,
-                contentPadding = PaddingValues(horizontal = 8.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp),
                 modifier = Modifier
                     .height(60.dp)
-                    .width(180.dp)
+                    .align(Alignment.End)
             ) {
-                Icon(Icons.Filled.AttachMoney, contentDescription = null)
-                Spacer(modifier = Modifier.width(12.dp))
+                Icon(Icons.Filled.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Agregar gasto",
+                    text = stringResource(R.string.add_expense),
                     maxLines = 1,
                     softWrap = true,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                 )
+                Spacer(modifier = Modifier.width(8.dp))
             }
             Spacer(modifier = Modifier.height(8.dp))
+            if (hasDebts)
             Button(
                 onClick = { onAddPaymentClick() },
                 shape = ShapeDefaults.Medium,
                 contentPadding = PaddingValues(horizontal = 12.dp),
                 modifier = Modifier
                     .height(60.dp)
-                    .width(180.dp)
+                    .align(Alignment.End)
             ) {
-                Icon(Icons.Filled.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(12.dp))
+                Icon(Icons.Filled.AttachMoney, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Realizar pago",
+                    text = stringResource(R.string.make_a_payment),
                     maxLines = 1,
                     softWrap = true,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                 )
+                Spacer(modifier = Modifier.width(8.dp))
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -524,7 +517,6 @@ fun CustomFloatingActionButton(
             modifier = Modifier
                 .align(Alignment.End)
         ) {
-
             Icon(
                 imageVector = fabIcon,
                 contentDescription = null,

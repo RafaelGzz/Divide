@@ -57,7 +57,7 @@ import com.ragl.divide.data.models.Payment
 import com.ragl.divide.ui.screens.home.TitleRow
 import com.ragl.divide.ui.showToast
 import com.ragl.divide.ui.utils.DivideTextField
-import java.math.RoundingMode
+import com.ragl.divide.ui.utils.toTwoDecimals
 import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Date
@@ -68,6 +68,7 @@ fun ExpenseDetailsScreen(
     expense: Expense,
     editExpense: (String) -> Unit,
     onPaymentMade: (Payment) -> Unit,
+    onDeletePayment: (String) -> Unit,
     onBackClick: () -> Unit,
     onDeleteExpense: () -> Unit,
     onPaidExpense: () -> Unit,
@@ -92,8 +93,7 @@ fun ExpenseDetailsScreen(
     val isLoading by expenseDetailsViewModel.isLoading.collectAsState()
 
     val remainingBalance = remember(expenseState.amountPaid, expenseState.amount) {
-        (expenseState.amount - expenseState.amountPaid).toBigDecimal()
-            .setScale(2, RoundingMode.HALF_EVEN).toDouble()
+        (expenseState.amount - expenseState.amountPaid).toTwoDecimals()
     }
 
     Scaffold(
@@ -163,7 +163,7 @@ fun ExpenseDetailsScreen(
                 Text(
                     text = NumberFormat.getCurrencyInstance().format(expenseState.amount),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.headlineLarge,
+                    style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
                     modifier = Modifier.fillMaxWidth()
                 )
 //                Text(
@@ -175,7 +175,6 @@ fun ExpenseDetailsScreen(
 //                    style = MaterialTheme.typography.labelMedium,
 //                    modifier = Modifier.fillMaxWidth()
 //                )
-
                 Text(
                     text = stringResource(
                         R.string.remaining_balance,
@@ -263,9 +262,11 @@ fun ExpenseDetailsScreen(
                                     onClick = {
                                         onConfirmDeleteClick = {
                                             expenseDetailsViewModel.deletePayment(
-                                                it.key,
-                                                it.value.amount
-                                            ) { showToast(context, it) }
+                                                paymentId = it.key,
+                                                amount = it.value.amount,
+                                                onFailure = { showToast(context, it) },
+                                                onSuccess = { onDeletePayment(it.key) }
+                                            )
                                             isDeleteDialogVisible = false
                                         }
                                         dialogMessage = R.string.delete_payment_confirm
@@ -327,18 +328,13 @@ private fun ExpenseDetailsAppBar(
                 softWrap = true,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 4.dp)
+                style = MaterialTheme.typography.titleLarge,
             )
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            titleContentColor = MaterialTheme.colorScheme.primary,
-            navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-            actionIconContentColor = MaterialTheme.colorScheme.onSurface
+            navigationIconContentColor = MaterialTheme.colorScheme.primary,
         ),
         navigationIcon = {
-
             IconButton(
                 onClick = onBackClick
             ) {
@@ -376,10 +372,10 @@ fun DeleteAlertDialog(
             }
         },
         title = {
-            Text(stringResource(R.string.delete))
+            Text(stringResource(R.string.delete), style = MaterialTheme.typography.titleLarge)
         },
         text = {
-            Text(stringResource(res))
+            Text(stringResource(res), style = MaterialTheme.typography.bodySmall)
         },
         containerColor = MaterialTheme.colorScheme.primaryContainer,
         titleContentColor = MaterialTheme.colorScheme.primary,
@@ -395,7 +391,7 @@ fun PaymentAlertDialog(
 ) {
 
     var paymentAmount by remember { mutableStateOf("") }
-    var paymentAmountError by remember { mutableStateOf("") }
+    var paymentAmountError: String? by remember { mutableStateOf(null) }
 
     val context = LocalContext.current
 
@@ -405,28 +401,21 @@ fun PaymentAlertDialog(
         titleContentColor = MaterialTheme.colorScheme.primary,
         textContentColor = MaterialTheme.colorScheme.onSurface,
         title = {
-            Text(stringResource(R.string.make_a_payment))
+            Text(
+                stringResource(R.string.make_a_payment),
+                style = MaterialTheme.typography.titleLarge
+            )
         },
         text = {
             Column {
-                Text(
-                    text = stringResource(
-                        R.string.remaining_balance,
-                        NumberFormat.getCurrencyInstance().format(remainingBalance)
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
                 DivideTextField(
                     label = stringResource(R.string.amount),
                     input = paymentAmount,
                     error = paymentAmountError,
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Go,
-                    errorText = paymentAmountError != "",
-                    prefix = {
-                        Text(text = "$")
-                    },
+//                    errorText = paymentAmountError != "",
+                    prefix = { Text(text = "$") },
                     onValueChange = { input ->
                         if (input.isEmpty()) paymentAmount = "" else {
                             val formatted = input.replace(",", ".")
@@ -438,7 +427,15 @@ fun PaymentAlertDialog(
                                 }
                             }
                         }
-                    }
+                    },
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Text(
+                    text = stringResource(
+                        R.string.remaining_balance,
+                        NumberFormat.getCurrencyInstance().format(remainingBalance)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
         },

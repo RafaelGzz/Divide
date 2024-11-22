@@ -4,17 +4,20 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -51,7 +54,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -67,7 +69,7 @@ import com.ragl.divide.ui.theme.AppTypography
 import com.ragl.divide.ui.utils.DivideTextField
 import java.util.Date
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ExpenseScreen(
     vm: ExpenseViewModel = hiltViewModel(),
@@ -85,7 +87,6 @@ fun ExpenseScreen(
     BackHandler {
         onBackClick()
     }
-
 
     var categoryMenuExpanded by remember { mutableStateOf(false) }
     var frequencyMenuExpanded by remember { mutableStateOf(false) }
@@ -108,47 +109,25 @@ fun ExpenseScreen(
                 title = {
                     Text(
                         stringResource(if (!isUpdate) R.string.add_expense else R.string.update_expense),
-                        style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.primary)
+                        style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
                     IconButton(
                         onClick = onBackClick
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Filled.Close, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             )
-        },
-        bottomBar = {
-            Button(
-                onClick = {
-                    vm.saveExpense(
-                        scheduleNotificationService = scheduleNotificationService,
-                        onSuccess = onSaveExpense,
-                        onError = {
-                            showToast(context, it)
-                        }
-                    )
-                },
-                shape = ShapeDefaults.Medium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(128.dp)
-                    .padding(horizontal = 16.dp, vertical = 32.dp)
-            ) {
-                Text(
-                    text = stringResource(if (!isUpdate) R.string.add else R.string.update),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
         }
     ) { paddingValues ->
         Column(
             Modifier
+                .imePadding()
+                .verticalScroll(state = scrollState)
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
         ) {
             if (selectDateDialogEnabled) {
                 FrequencyStartingDatePicker(
@@ -190,34 +169,156 @@ fun ExpenseScreen(
                     textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
-            Column(
+            DivideTextField(
+                label = stringResource(R.string.title),
+                input = vm.title,
+                error = vm.titleError,
+                onValueChange = vm::updateTitle,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Text(
+                text = stringResource(R.string.category),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            ExposedDropdownMenuBox(
                 modifier = Modifier
-                    .verticalScroll(state = scrollState)
-                    .fillMaxSize()
+                    .padding(bottom = 16.dp)
+                    .fillMaxWidth(),
+                expanded = categoryMenuExpanded,
+                onExpandedChange = { categoryMenuExpanded = !categoryMenuExpanded }) {
+                TextField(
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
+                    value = vm.category.name,
+                    onValueChange = {},
+                    singleLine = true,
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryMenuExpanded) },
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .menuAnchor(MenuAnchorType.PrimaryEditable)
+                        .clip(ShapeDefaults.Medium)
+                        .fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = categoryMenuExpanded,
+                    onDismissRequest = { categoryMenuExpanded = false },
+                    modifier = Modifier
+                        .background(color = MaterialTheme.colorScheme.primaryContainer)
+                        .clip(CircleShape)
+                ) {
+                    Category.entries.forEach {
+                        DropdownMenuItem(text = {
+                            Text(
+                                text = it.name,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }, onClick = {
+                            vm.updateCategory(it)
+                            categoryMenuExpanded = false
+                        },
+                            modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
+                        )
+                    }
+                }
+            }
+            DivideTextField(
+                label = stringResource(R.string.amount),
+                keyboardType = KeyboardType.Number,
+                prefix = { Text(text = "$", style = AppTypography.bodyMedium) },
+                input = vm.amount,
+                error = vm.amountError,
+                enabled = vm.amountPaid == 0.0,
+                onValueChange = { input ->
+                    if (input.isEmpty()) vm.updateAmount("") else {
+                        val formatted = input.replace(",", ".")
+                        val parsed = formatted.toDoubleOrNull()
+                        parsed?.let {
+                            val decimalPart = formatted.substringAfter(".", "")
+                            if (decimalPart.length <= 2 && parsed <= 999999999.99) {
+                                vm.updateAmount(input)
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            DivideTextField(
+                label = stringResource(R.string.divided_in),
+                input = vm.payments,
+                error = vm.paymentsError,
+                keyboardType = KeyboardType.NumberPassword,
+                suffix = {
+                    Text(
+                        stringResource(paymentSuffix),
+                        style = AppTypography.bodyMedium.copy(color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    )
+                },
+                onValueChange = { if (it.isDigitsOnly()) vm.updatePayments(it) },
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            DivideTextField(
+                label = stringResource(R.string.notes),
+                input = vm.notes,
+                onValueChange = vm::updateNotes,
+                imeAction = ImeAction.Default,
+                singleLine = false,
+                modifier = Modifier
+                    .heightIn(max = 200.dp)
+                    .padding(bottom = 12.dp)
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                Checkbox(
+                    checked = vm.isRemindersEnabled,
+                    onCheckedChange = {
+                        if (it) {
+                            if (!scheduleNotificationService.canScheduleExactAlarms()) {
+                                reminderPermissionMessageDialogEnabled = true
+                            } else {
+                                vm.updateIsRemindersEnabled(true)
+                            }
+                        } else {
+                            vm.updateIsRemindersEnabled(false)
+                        }
+                    },
+                    colors = CheckboxDefaults.colors(uncheckedColor = MaterialTheme.colorScheme.primary)
+                )
+                Text(
+                    text = stringResource(R.string.get_reminders),
+                    style = AppTypography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+            }
+            if (vm.isRemindersEnabled) {
                 Row(
                     Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    DivideTextField(
-                        label = stringResource(R.string.title),
-                        input = vm.title,
-                        error = vm.titleError,
-                        onValueChange = vm::updateTitle,
-                        modifier = Modifier.weight(.55f)
-                    )
                     Column(
-                        Modifier.weight(.45f)
+                        Modifier.weight(.55f)
                     ) {
                         Text(
-                            text = stringResource(R.string.category),
-                            style = AppTypography.labelSmall.copy(fontWeight = FontWeight.Normal),
+                            text = stringResource(R.string.frequency),
+                            style = AppTypography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                         ExposedDropdownMenuBox(
-                            expanded = categoryMenuExpanded,
-                            onExpandedChange = { categoryMenuExpanded = !categoryMenuExpanded }) {
+                            expanded = frequencyMenuExpanded,
+                            onExpandedChange = {
+                                frequencyMenuExpanded = !frequencyMenuExpanded
+                            }) {
                             TextField(
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -225,206 +326,89 @@ fun ExpenseScreen(
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
                                 ),
-                                value = vm.category.name,
+                                value = stringResource(vm.frequency.resId),
                                 onValueChange = {},
                                 singleLine = true,
                                 readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryMenuExpanded) },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                        expanded = frequencyMenuExpanded
+                                    )
+                                },
                                 modifier = Modifier
                                     .menuAnchor(MenuAnchorType.PrimaryEditable)
                                     .clip(ShapeDefaults.Medium)
                             )
                             ExposedDropdownMenu(
-                                expanded = categoryMenuExpanded,
-                                onDismissRequest = { categoryMenuExpanded = false },
+                                expanded = frequencyMenuExpanded,
+                                onDismissRequest = { frequencyMenuExpanded = false },
                                 modifier = Modifier
                                     .background(color = MaterialTheme.colorScheme.primaryContainer)
-                                    .clip(CircleShape)
                             ) {
-                                Category.entries.forEach {
-                                    DropdownMenuItem(text = {
-                                        Text(
-                                            text = it.name,
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-                                    }, onClick = {
-                                        vm.updateCategory(it)
-                                        categoryMenuExpanded = false
-                                    },
+                                Frequency.entries.forEach {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                stringResource(it.resId),
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        },
+                                        onClick = {
+                                            vm.updateFrequency(it)
+                                            frequencyMenuExpanded = false
+                                        },
                                         modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
                                     )
                                 }
                             }
                         }
                     }
-                }
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    DivideTextField(
-                        label = stringResource(R.string.amount),
-                        keyboardType = KeyboardType.Number,
-                        prefix = { Text(text = "$", style = AppTypography.bodyLarge) },
-                        input = vm.amount,
-                        error = vm.amountError,
-                        enabled = vm.amountPaid == 0.0,
-                        onValueChange = { input ->
-                            if (input.isEmpty()) vm.updateAmount("") else {
-                                val formatted = input.replace(",", ".")
-                                val parsed = formatted.toDoubleOrNull()
-                                parsed?.let {
-                                    val decimalPart = formatted.substringAfter(".", "")
-                                    if (decimalPart.length <= 2 && parsed <= 999999999.99) {
-                                        vm.updateAmount(input)
-                                    }
-                                }
-                            }
-                        },
-                        modifier = Modifier.weight(.55f)
-                    )
-                    DivideTextField(
-                        label = stringResource(R.string.divided_in),
-                        input = vm.payments,
-                        error = vm.paymentsError,
-                        keyboardType = KeyboardType.NumberPassword,
-                        suffix = {
-                            Text(
-                                stringResource(paymentSuffix),
-                                style = AppTypography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer)
-                            )
-                        },
-                        onValueChange = { if (it.isDigitsOnly()) vm.updatePayments(it) },
-                        modifier = Modifier.weight(.45f)
-                    )
-                }
-                DivideTextField(
-                    label = stringResource(R.string.notes),
-                    input = vm.notes,
-                    onValueChange = vm::updateNotes,
-                    imeAction = ImeAction.Default,
-                    singleLine = false,
-                    errorText = false,
-                    modifier = Modifier
-                        .heightIn(max = 200.dp)
-                        .padding(bottom = 12.dp)
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(top = 16.dp)
-                ) {
-                    Checkbox(
-                        checked = vm.isRemindersEnabled,
-                        onCheckedChange = {
-                            if (it) {
-                                if (!scheduleNotificationService.canScheduleExactAlarms()) {
-                                    reminderPermissionMessageDialogEnabled = true
-                                } else {
-                                    vm.updateIsRemindersEnabled(true)
-                                }
-                            } else {
-                                vm.updateIsRemindersEnabled(false)
-                            }
-                        },
-                        colors = CheckboxDefaults.colors(uncheckedColor = MaterialTheme.colorScheme.primary)
-                    )
-                    Text(
-                        text = stringResource(R.string.get_reminders),
-                        style = AppTypography.labelSmall.copy(fontWeight = FontWeight.Normal),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                }
-                if (vm.isRemindersEnabled) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        Modifier.weight(.45f)
                     ) {
-
-                        Column(
-                            Modifier.weight(.55f)
+                        Text(
+                            text = stringResource(R.string.starting_from),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        Button(
+                            onClick = { selectDateDialogEnabled = true },
+                            shape = ShapeDefaults.Medium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp)
                         ) {
                             Text(
-                                text = stringResource(R.string.frequency),
-                                style = AppTypography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                text = stringResource(R.string.select_date),
+                                style = MaterialTheme.typography.bodyLarge
                             )
-                            ExposedDropdownMenuBox(
-                                expanded = frequencyMenuExpanded,
-                                onExpandedChange = {
-                                    frequencyMenuExpanded = !frequencyMenuExpanded
-                                }) {
-                                TextField(
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        focusedIndicatorColor = Color.Transparent,
-                                        unfocusedIndicatorColor = Color.Transparent,
-                                    ),
-                                    value = stringResource(vm.frequency.resId),
-                                    onValueChange = {},
-                                    singleLine = true,
-                                    readOnly = true,
-                                    trailingIcon = {
-                                        ExposedDropdownMenuDefaults.TrailingIcon(
-                                            expanded = frequencyMenuExpanded
-                                        )
-                                    },
-                                    modifier = Modifier
-                                        .menuAnchor(MenuAnchorType.PrimaryEditable)
-                                        .clip(ShapeDefaults.Medium)
-                                )
-                                ExposedDropdownMenu(
-                                    expanded = frequencyMenuExpanded,
-                                    onDismissRequest = { frequencyMenuExpanded = false },
-                                    modifier = Modifier
-                                        .background(color = MaterialTheme.colorScheme.primaryContainer)
-                                ) {
-                                    Frequency.entries.forEach {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    stringResource(it.resId),
-                                                    style = MaterialTheme.typography.bodyMedium
-                                                )
-                                            },
-                                            onClick = {
-                                                vm.updateFrequency(it)
-                                                frequencyMenuExpanded = false
-                                            },
-                                            modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        Column(
-                            Modifier.weight(.45f)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.starting_from),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            Button(
-                                onClick = { selectDateDialogEnabled = true },
-                                shape = ShapeDefaults.Medium,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(60.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.select_date),
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
                         }
                     }
                 }
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Button(
+                onClick = {
+                    vm.saveExpense(
+                        scheduleNotificationService = scheduleNotificationService,
+                        onSuccess = onSaveExpense,
+                        onError = {
+                            showToast(context, it)
+                        }
+                    )
+                },
+                shape = ShapeDefaults.Medium,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .fillMaxWidth()
+                    .padding(top = 24.dp)
+                    .size(64.dp)
+            ) {
+                Text(
+                    text = stringResource(if (!isUpdate) R.string.add else R.string.update),
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
         }
     }

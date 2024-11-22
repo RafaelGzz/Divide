@@ -92,7 +92,7 @@ fun GroupExpenseDetailsScreen(
                 colors = TopAppBarDefaults.largeTopAppBarColors(
                     scrolledContainerColor = Color.Transparent,
                     containerColor = Color.Transparent,
-                    titleContentColor = MaterialTheme.colorScheme.primary
+                    navigationIconContentColor = MaterialTheme.colorScheme.primary
                 ),
                 navigationIcon = {
                     IconButton(
@@ -103,14 +103,14 @@ fun GroupExpenseDetailsScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = { isDeleteDialogEnabled = true }
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
-                    }
-                    IconButton(
                         onClick = { onEditClick(groupExpenseState.id) }
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    }
+                    IconButton(
+                        onClick = { isDeleteDialogEnabled = true }
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
                     }
                 }
             )
@@ -125,8 +125,8 @@ fun GroupExpenseDetailsScreen(
             if (isDeleteDialogEnabled) {
                 AlertDialog(
                     onDismissRequest = { isDeleteDialogEnabled = false },
-                    title = { Text(stringResource(R.string.delete)) },
-                    text = { Text(stringResource(R.string.delete_expense_confirm)) },
+                    title = { Text(stringResource(R.string.delete), style = MaterialTheme.typography.titleMedium) },
+                    text = { Text(stringResource(R.string.delete_expense_confirm), style = MaterialTheme.typography.bodyMedium) },
                     confirmButton = {
                         TextButton(onClick = {
                             isDeleteDialogEnabled = false
@@ -153,6 +153,10 @@ fun GroupExpenseDetailsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             sortedPaidBy.forEach { (member, debt) ->
+                val realDebt = when(groupExpense.splitMethod) {
+                    Method.EQUALLY,Method.CUSTOM -> debt
+                    Method.PERCENTAGES -> debt / 100 * groupExpense.amount
+                }
                 FriendItem(
                     headline = member.name,
                     photoUrl = member.photoUrl,
@@ -160,7 +164,7 @@ fun GroupExpenseDetailsScreen(
                         Text(
                             text = stringResource(
                                 R.string.paid_x,
-                                NumberFormat.getCurrencyInstance().format(groupExpenseState.amount)
+                                NumberFormat.getCurrencyInstance().format(realDebt)
                             ),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodyMedium,
@@ -236,18 +240,18 @@ fun GroupExpenseDetailsScreen(
 }
 
 @Composable
-private fun ExpenseDetails(state: GroupExpense) {
+private fun ExpenseDetails(expense: GroupExpense) {
     Text(
-        text = NumberFormat.getCurrencyInstance().format(state.amount),
+        text = NumberFormat.getCurrencyInstance().format(expense.amount),
         textAlign = TextAlign.Center,
-        style = MaterialTheme.typography.headlineLarge,
+        style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
         modifier = Modifier.fillMaxWidth()
     )
     Text(
         text = stringResource(
             R.string.added_on,
             DateFormat.getDateInstance(DateFormat.LONG)
-                .format(Date(state.addedDate))
+                .format(Date(expense.addedDate))
         ),
         textAlign = TextAlign.Center,
         style = MaterialTheme.typography.bodySmall,
@@ -255,7 +259,7 @@ private fun ExpenseDetails(state: GroupExpense) {
             .fillMaxWidth()
             .padding(top = 8.dp)
     )
-    if (state.notes != "") {
+    if (expense.notes != "") {
         Text(
             text = "${stringResource(R.string.notes)}:",
             color = MaterialTheme.colorScheme.primary,
@@ -266,7 +270,7 @@ private fun ExpenseDetails(state: GroupExpense) {
                 .padding(top = 16.dp)
         )
         Text(
-            text = state.notes,
+            text = expense.notes,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.fillMaxWidth()

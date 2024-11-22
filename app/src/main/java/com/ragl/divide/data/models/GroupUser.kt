@@ -6,4 +6,5 @@ data class GroupUser(
     val owed: Map<String, Double> = emptyMap(),
     val totalOwed: Double = 0.0,
     val totalDebt: Double = 0.0,
+    val netDebt: Double = 0.0
 )
