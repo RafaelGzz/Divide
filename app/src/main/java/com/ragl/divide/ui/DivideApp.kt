@@ -61,7 +61,7 @@ fun DivideApp(
     splashScreen.setKeepOnScreenCondition { isLoading }
     val context = LocalContext.current
     val startDestination by signInViewModel.startDestination.collectAsState()
-    val user by userViewModel.user.collectAsState()
+    val user by userViewModel.state.collectAsState()
     val darkMode by userViewModel.isDarkMode.collectAsState()
     DivideTheme(darkMode?.toBoolean() ?: isSystemInDarkTheme()) {
         Box(

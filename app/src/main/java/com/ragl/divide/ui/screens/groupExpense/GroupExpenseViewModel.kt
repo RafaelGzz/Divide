@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Collections.emptyMap
 import javax.inject.Inject
 
 @HiltViewModel
@@ -192,15 +193,13 @@ class GroupExpenseViewModel @Inject constructor(
                     val savedExpense = if (!isUpdate.value) {
                         groupRepository.saveExpense(
                             groupId = _group.value.id,
-                            expense = expense,
-                            currentUserId = userId
+                            expense = expense
                         )
                     } else {
                         groupRepository.updateExpense(
                             groupId = _group.value.id,
                             newExpense = expense,
-                            oldExpense = _expense.value,
-                            currentUserId = userId
+                            oldExpense = _expense.value
                         )
                     }
                     onSuccess(savedExpense, _expense.value)

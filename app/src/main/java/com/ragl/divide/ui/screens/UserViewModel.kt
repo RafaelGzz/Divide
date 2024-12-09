@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class UserState(
+data class AppState(
     val isLoading: Boolean = false,
     val expenses: Map<String, Expense> = emptyMap(),
     val groups: Map<String, Group> = emptyMap(),
@@ -43,8 +43,8 @@ class UserViewModel @Inject constructor(
     private val groupRepository: GroupRepository
 ) : ViewModel() {
 
-    private val _user = MutableStateFlow(UserState())
-    val user = _user.asStateFlow()
+    private val _state = MutableStateFlow(AppState())
+    val state = _state.asStateFlow()
 
     var isDarkMode = MutableStateFlow<String?>(null)
 
@@ -65,7 +65,7 @@ class UserViewModel @Inject constructor(
 
     fun getUserData() {
         viewModelScope.launch(Dispatchers.IO) {
-            _user.update {
+            _state.update {
                 it.copy(isLoading = true)
             }
             try {
@@ -73,7 +73,7 @@ class UserViewModel @Inject constructor(
                 val groups = groupRepository.getGroups(user.groups)
                 val expenses = userRepository.getExpenses()
                 val friends = friendsRepository.getFriends(user.friends)
-                _user.update {
+                _state.update {
                     it.copy(
                         expenses = expenses,
                         groups = groups,
@@ -85,7 +85,7 @@ class UserViewModel @Inject constructor(
                 e.printStackTrace()
                 Log.e("HomeViewModel", e.message.toString())
             }
-            _user.update {
+            _state.update {
                 it.copy(isLoading = false)
             }
         }
@@ -94,15 +94,15 @@ class UserViewModel @Inject constructor(
     fun signOut(onSignOut: () -> Unit) {
         viewModelScope.launch {
             try {
-                _user.update {
+                _state.update {
                     it.copy(isLoading = true)
                 }
                 userRepository.signOut()
                 if (userRepository.getFirebaseUser() == null) {
                     preferencesRepository.saveStartDestination(Screen.Login.route)
                     onSignOut()
-                    _user.update {
-                        UserState(isLoading = true)
+                    _state.update {
+                        AppState(isLoading = true)
                     }
                 }
             } catch (e: Exception) {
@@ -112,13 +112,13 @@ class UserViewModel @Inject constructor(
     }
 
     fun removeExpense(expenseId: String) {
-        _user.update {
+        _state.update {
             it.copy(expenses = it.expenses - expenseId)
         }
     }
 
     fun paidExpense(expenseId: String) {
-        _user.update {
+        _state.update {
             it.copy(expenses = it.expenses.mapValues { expense ->
                 if (expense.key == expenseId) {
                     expense.value.copy(paid = true)
@@ -130,31 +130,31 @@ class UserViewModel @Inject constructor(
     }
 
     fun removeGroup(groupId: String) {
-        _user.update {
+        _state.update {
             it.copy(groups = it.groups - groupId)
         }
     }
 
     fun addGroup(group: Group) {
-        _user.update {
+        _state.update {
             it.copy(groups = it.groups + (group.id to group))
         }
     }
 
     fun saveExpense(expense: Expense) {
-        _user.update {
+        _state.update {
             it.copy(expenses = it.expenses + (expense.id to expense))
         }
     }
 
     fun addFriend(friend: User) {
-        _user.update {
+        _state.update {
             it.copy(friends = it.friends + (friend.uuid to friend))
         }
     }
 
     fun savePayment(expenseId: String, payment: Payment) {
-        _user.update {
+        _state.update {
             it.copy(expenses = it.expenses.mapValues { expense ->
                 if (expense.key == expenseId) {
                     expense.value.copy(
@@ -169,7 +169,7 @@ class UserViewModel @Inject constructor(
     }
 
     fun deletePayment(expenseId: String, paymentId: String) {
-        _user.update {
+        _state.update {
             it.copy(expenses = it.expenses.mapValues { expense ->
                 if (expense.key == expenseId) {
                     expense.value.copy(
@@ -189,7 +189,7 @@ class UserViewModel @Inject constructor(
                 selectedGroupId = group.id
                 isLoadingMembers = true
                 val users = groupRepository.getUsers(group.users.values.map { it.id })
-                _user.update {
+                _state.update {
                     it.copy(selectedGroupMembers = users)
                 }
                 isLoadingMembers = false
@@ -197,7 +197,7 @@ class UserViewModel @Inject constructor(
     }
 
     fun saveGroupExpense(groupId: String, expense: GroupExpense) {
-        _user.update {
+        _state.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
                     if (group.key == groupId) {
@@ -209,7 +209,7 @@ class UserViewModel @Inject constructor(
             )
         }
         expense.paidBy.entries.forEach { (payerId, amountPaid) ->
-            val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(payerId)!!
+            val groupUser: GroupUser = _state.value.groups[groupId]?.users?.get(payerId)!!
             val newOwedMap = groupUser.owed.toMutableMap()
             expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
                 val debt = when (expense.splitMethod) {
@@ -222,7 +222,7 @@ class UserViewModel @Inject constructor(
                 Method.EQUALLY, Method.CUSTOM -> amountPaid
                 Method.PERCENTAGES -> (amountPaid * expense.amount) / 100
             }
-            _user.update {
+            _state.update {
                 it.copy(
                     groups = it.groups.mapValues { group ->
                         if (group.key == groupId) {
@@ -246,7 +246,7 @@ class UserViewModel @Inject constructor(
             }
         }
         expense.debtors.entries.forEach { (debtorId, amount) ->
-            val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(debtorId)!!
+            val groupUser: GroupUser = _state.value.groups[groupId]?.users?.get(debtorId)!!
             //groupUser.totalDebt += amount
             val newDebtsMap = groupUser.debts.toMutableMap()
             val totalDebt = when (expense.splitMethod) {
@@ -256,7 +256,7 @@ class UserViewModel @Inject constructor(
             expense.paidBy.keys.forEach { payerId ->
                 newDebtsMap[payerId] = (newDebtsMap[payerId] ?: 0.0) + totalDebt
             }
-            _user.update {
+            _state.update {
                 it.copy(
                     groups = it.groups.mapValues { group ->
                         if (group.key == groupId) {
@@ -282,7 +282,7 @@ class UserViewModel @Inject constructor(
     }
 
     fun updateGroupExpense(groupId: String, newExpense: GroupExpense, oldExpense: GroupExpense) {
-        _user.update { currentUser ->
+        _state.update { currentUser ->
             // Actualiza el gasto del grupo
             val updatedGroups = currentUser.groups.mapValues { group ->
                 if (group.key == groupId) {
@@ -383,7 +383,7 @@ class UserViewModel @Inject constructor(
     }
 
     fun removeGroupExpense(groupId: String, expense: GroupExpense) {
-        _user.update {
+        _state.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
                     if (group.key == groupId) {
@@ -395,7 +395,7 @@ class UserViewModel @Inject constructor(
             )
         }
         expense.paidBy.entries.forEach { (payerId, amountPaid) ->
-            val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(payerId)!!
+            val groupUser: GroupUser = _state.value.groups[groupId]?.users?.get(payerId)!!
             //groupUser.totalOwed += amountPaid
             val newOwedMap = groupUser.owed.toMutableMap()
             expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
@@ -410,7 +410,7 @@ class UserViewModel @Inject constructor(
                 Method.EQUALLY, Method.CUSTOM -> amountPaid
                 Method.PERCENTAGES -> (amountPaid * expense.amount) / 100
             }
-            _user.update {
+            _state.update {
                 it.copy(
                     groups = it.groups.mapValues { group ->
                         if (group.key == groupId) {
@@ -434,7 +434,7 @@ class UserViewModel @Inject constructor(
             }
         }
         expense.debtors.entries.forEach { (debtorId, amount) ->
-            val groupUser: GroupUser = _user.value.groups[groupId]?.users?.get(debtorId)!!
+            val groupUser: GroupUser = _state.value.groups[groupId]?.users?.get(debtorId)!!
             //groupUser.totalDebt += amount
             val newDebtsMap = groupUser.debts.toMutableMap()
             val totalDebt = when (expense.splitMethod) {
@@ -445,7 +445,7 @@ class UserViewModel @Inject constructor(
                 newDebtsMap[payerId] =
                     if (newDebtsMap[payerId] == null) 0.0 else (newDebtsMap[payerId]!! - totalDebt)
             }
-            _user.update {
+            _state.update {
                 it.copy(
                     groups = it.groups.mapValues { group ->
                         if (group.key == groupId) {

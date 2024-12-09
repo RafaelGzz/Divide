@@ -1,6 +1,7 @@
 package com.ragl.divide.ui.screens.home
 
 import android.content.Intent
+import android.util.Pair
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
@@ -117,19 +118,19 @@ fun HomeScreen(
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val pullToRefreshState = rememberPullToRefreshState()
 
-    val user by vm.user.collectAsState()
-    val friends = remember(user.friends) {
-        user.friends.values.toList().sortedBy { it.name.lowercase() }
+    val state by vm.state.collectAsState()
+    val friends = remember(state.friends) {
+        state.friends.values.toList().sortedBy { it.name.lowercase() }
     }
-    val expenses = remember(user.expenses) {
-        user.expenses.values.toList().sortedBy { it.id }
+    val expenses = remember(state.expenses) {
+        state.expenses.values.toList().sortedBy { it.id }
     }
-    val groups = remember(user.groups) {
-        user.groups.values.toList().sortedBy { it.id }
+    val groups = remember(state.groups) {
+        state.groups.values.toList().sortedBy { it.id }
     }
-    var pullLoading by remember { mutableStateOf(user.isLoading) }
-    LaunchedEffect(user.isLoading) {
-        pullLoading = user.isLoading
+    var pullLoading by remember { mutableStateOf(state.isLoading) }
+    LaunchedEffect(state.isLoading) {
+        pullLoading = state.isLoading
     }
 
     var exit by remember { mutableStateOf(false) }
@@ -152,11 +153,11 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        if (user.isLoading) {
+        if (state.isLoading) {
             CircularProgressIndicator()
         }
         AnimatedVisibility(
-            visible = !user.isLoading,
+            visible = !state.isLoading,
             enter = fadeIn(animationSpec = tween(500)),
             exit = ExitTransition.None
         ) {
@@ -235,7 +236,7 @@ fun HomeScreen(
                                 exit = ExitTransition.None
                             ) {
                                 ProfileBody(
-                                    user = user.user,
+                                    user = state.user,
                                     onSignOut = { vm.signOut { onSignOut() } },
                                     isDarkMode = isDarkMode,
                                     onChangeDarkMode = onChangeDarkMode

@@ -24,8 +24,8 @@ interface GroupRepository {
     suspend fun getUsers(userIds: List<String>): List<User>
     suspend fun leaveGroup(groupId: String)
     suspend fun deleteGroup(groupId: String, image: String)
-    suspend fun saveExpense(groupId: String, expense: GroupExpense, currentUserId: String): GroupExpense
-    suspend fun updateExpense(groupId: String, oldExpense: GroupExpense, newExpense: GroupExpense, currentUserId: String): GroupExpense
+    suspend fun saveExpense(groupId: String, expense: GroupExpense): GroupExpense
+    suspend fun updateExpense(groupId: String, oldExpense: GroupExpense, newExpense: GroupExpense): GroupExpense
     suspend fun deleteExpense(groupId: String, expense: GroupExpense)
 }
 
@@ -119,7 +119,7 @@ class GroupRepositoryImpl(
         groupRef.removeValue().await()
     }
 
-    override suspend fun saveExpense(groupId: String, expense: GroupExpense, currentUserId: String): GroupExpense {
+    override suspend fun saveExpense(groupId: String, expense: GroupExpense): GroupExpense {
         val id = "id${Date().time}"
         val newExpense = expense.copy(id = id)
         val groupRef = database.getReference("groups/$groupId")
@@ -164,7 +164,7 @@ class GroupRepositoryImpl(
         return newExpense
     }
 
-    override suspend fun updateExpense(groupId: String, oldExpense: GroupExpense, newExpense: GroupExpense, currentUserId: String): GroupExpense {
+    override suspend fun updateExpense(groupId: String, oldExpense: GroupExpense, newExpense: GroupExpense): GroupExpense {
         val groupRef = database.getReference("groups/$groupId")
         groupRef.child("expenses").child(newExpense.id).setValue(newExpense).await()
 
